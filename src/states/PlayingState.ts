@@ -1,11 +1,32 @@
 import { GameState } from '../interfaces/GameState';
 import { Game } from '../Game';
 import { Asteroid } from '../Asteroid';
-import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR } from '../Constants';
+import { Ship } from '../Ship';
+import { Bullet } from '../Bullet';
+import { Starfield } from '../Starfield';
+import { ParticleManager } from '../ParticleManager';
+import { Input } from '../Input';
+import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR, GAME_HEIGHT } from '../Constants';
 
 export class PlayingState implements GameState {
-    enter(game: Game): void {
-        game.ship.visible = true;
+    input: Input;
+    starfield: Starfield;
+    ship: Ship;
+    asteroids: Asteroid[] = [];
+    bullets: Bullet[] = [];
+    particleManager: ParticleManager;
+    asteroidTimer: number = 0;
+
+    constructor(input: Input) {
+        this.input = input;
+        this.starfield = new Starfield();
+        this.bullets = [];
+        this.ship = new Ship(this.input, this.bullets);
+        this.particleManager = new ParticleManager();
+    }
+
+    enter(_game: Game): void {
+        this.ship.visible = true;
     }
 
     update(game: Game, deltaTime: number): void {
@@ -14,58 +35,77 @@ export class PlayingState implements GameState {
             return;
         }
 
-        game.starfield.update(deltaTime);
-        game.ship.update(deltaTime);
-        this.updateBullets(game, deltaTime);
-        this.updateAsteroids(game, deltaTime);
-        game.particleManager.update(deltaTime);
+        this.starfield.update(deltaTime);
+        this.ship.update(deltaTime);
+        this.updateBullets(deltaTime);
+        this.updateAsteroids(deltaTime);
+        this.particleManager.update(deltaTime);
         this.checkCollisions(game);
     }
 
-    draw(game: Game, ctx: CanvasRenderingContext2D): void {
-        game.starfield.draw(ctx);
-        game.asteroids.forEach(a => a.draw(ctx));
-        game.bullets.forEach(b => b.draw(ctx));
-        game.particleManager.draw(ctx);
-        game.ship.draw(ctx);
+    draw(_game: Game, ctx: CanvasRenderingContext2D): void {
+        this.starfield.draw(ctx);
+        this.asteroids.forEach(a => a.draw(ctx));
+        this.bullets.forEach(b => b.draw(ctx));
+        this.particleManager.draw(ctx);
+        this.ship.draw(ctx);
     }
 
     exit(_game: Game): void { }
 
-    private updateBullets(game: Game, deltaTime: number) {
-        for (let i = game.bullets.length - 1; i >= 0; i--) {
-            const b = game.bullets[i];
+    startExplosion() {
+        this.particleManager.createExplosion(SHIP_COLLISION_X, this.ship.y);
+        this.ship.visible = false;
+    }
+
+    updateDuringExplosion(deltaTime: number) {
+        this.starfield.update(deltaTime);
+        this.updateBullets(deltaTime);
+        this.updateAsteroids(deltaTime);
+        this.particleManager.update(deltaTime);
+    }
+
+    respawn() {
+        this.ship.y = GAME_HEIGHT / 2;
+        this.ship.visible = true;
+        this.asteroids = [];
+        this.asteroidTimer = 0;
+    }
+
+    private updateBullets(deltaTime: number) {
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            const b = this.bullets[i];
             b.update(deltaTime);
             if (!b.active) {
-                game.bullets.splice(i, 1);
+                this.bullets.splice(i, 1);
             }
         }
     }
 
-    private updateAsteroids(game: Game, deltaTime: number) {
-        game.asteroidTimer -= deltaTime;
-        if (game.asteroidTimer <= 0) {
-            game.asteroids.push(new Asteroid());
-            game.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
+    private updateAsteroids(deltaTime: number) {
+        this.asteroidTimer -= deltaTime;
+        if (this.asteroidTimer <= 0) {
+            this.asteroids.push(new Asteroid());
+            this.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
         }
 
-        for (let i = game.asteroids.length - 1; i >= 0; i--) {
-            const a = game.asteroids[i];
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const a = this.asteroids[i];
             a.update(deltaTime);
             if (!a.active) {
-                game.asteroids.splice(i, 1);
+                this.asteroids.splice(i, 1);
             }
         }
     }
 
     private checkCollisions(game: Game) {
-        for (let i = game.asteroids.length - 1; i >= 0; i--) {
-            const asteroid = game.asteroids[i];
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = this.asteroids[i];
 
             // Ship Collision
-            if (game.ship.visible) {
+            if (this.ship.visible) {
                 const dx = asteroid.x - SHIP_COLLISION_X;
-                const dy = asteroid.y - game.ship.y;
+                const dy = asteroid.y - this.ship.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
@@ -78,16 +118,16 @@ export class PlayingState implements GameState {
             }
 
             // Bullet Collision
-            for (let j = game.bullets.length - 1; j >= 0; j--) {
-                const bullet = game.bullets[j];
+            for (let j = this.bullets.length - 1; j >= 0; j--) {
+                const bullet = this.bullets[j];
                 const dx = asteroid.x - bullet.x;
                 const dy = asteroid.y - bullet.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < asteroid.size + bullet.size) {
-                    game.particleManager.createExplosion(asteroid.x, asteroid.y, ASTEROID_COLOR);
-                    game.asteroids.splice(i, 1);
-                    game.bullets.splice(j, 1);
+                    this.particleManager.createExplosion(asteroid.x, asteroid.y, ASTEROID_COLOR);
+                    this.asteroids.splice(i, 1);
+                    this.bullets.splice(j, 1);
 
                     game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
                     game.startFreeze(ASTEROID_HIT_FREEZE_DURATION, () => {
