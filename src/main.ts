@@ -63,6 +63,7 @@ let lastTime = 0;
 let gameState: GameState = GameState.PLAYING;
 let stateTimer = 0;
 let shakeIntensity = 0;
+let isPaused = false;
 
 let shipY = GAME_HEIGHT / 2;
 const keys = {
@@ -99,8 +100,30 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+// Pause Handling
+window.addEventListener('blur', () => {
+    isPaused = true;
+});
+
+window.addEventListener('focus', () => {
+    isPaused = false;
+    lastTime = performance.now();
+});
+
 // Game Loop
 function gameLoop(timestamp: number) {
+    if (isPaused) {
+        // Draw Paused Text
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.fillStyle = '#fff';
+        ctx.font = '48px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSED', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
 
