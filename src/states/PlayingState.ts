@@ -156,8 +156,18 @@ export class PlayingState implements GameState {
     }
 
     private checkCollisions(game: Game) {
+        // Don't check collisions during explosion
+        if (this.explosionTimer > 0) {
+            return;
+        }
+
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
             const asteroid = this.asteroids[i];
+
+            // Skip asteroids that have already collided with the ship
+            if (asteroid.hasCollidedWithShip) {
+                continue;
+            }
 
             // Ship Collision
             if (this.ship.visible) {
@@ -167,6 +177,8 @@ export class PlayingState implements GameState {
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
+                    // Mark this asteroid as having collided with the ship
+                    asteroid.hasCollidedWithShip = true;
                     game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
                     game.startFreeze(HIT_FREEZE_DURATION, () => {
                         this.startExplosion(game);

@@ -9,6 +9,7 @@ export class Asteroid implements Actor {
     speed: number;
     vertices: { x: number; y: number }[] = [];
     active: boolean = true;
+    hasCollidedWithShip: boolean = false;
 
     constructor() {
         this.x = GAME_WIDTH;
