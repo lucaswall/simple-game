@@ -3,7 +3,8 @@
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
-  background-color: #242424;
+  background-color: #000;
+  /* Dark background for space game */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -12,14 +13,24 @@
 
 body {
   margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
   justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  /* Prevent scrollbars */
 }
 
 canvas {
-  border: 1px solid #555;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  /* Max width/height will be handled by JS or simple CSS constraints if needed, 
+     but for aspect ratio preservation we'll let JS handle the exact size or 
+     use object-fit: contain technique if we were using an img, but for canvas 
+     we often just want it to fit. 
+     Let's use a simple responsive approach here: */
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16/9;
 }
