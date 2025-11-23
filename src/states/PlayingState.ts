@@ -52,6 +52,9 @@ export const SHIP_FIRE_RATE_MS = 250; // Milliseconds between shots
 export const BULLET_SPEED = 800; // Pixels per second
 export const BULLET_SIZE = 5; // Radius
 
+// Score constants
+const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
+
 export class PlayingState implements GameState {
     input: Input;
     starfield: Starfield;
@@ -61,6 +64,7 @@ export class PlayingState implements GameState {
     particleManager: ParticleManager;
     asteroidTimer: number = 0;
     private explosionTimer: number = 0;
+    score: number = 0;
 
     constructor(input: Input) {
         this.input = input;
@@ -74,6 +78,9 @@ export class PlayingState implements GameState {
         // Entities are either initialized in constructor or transferred from IntroState
         this.ship.visible = true;
         this.ship.controllable = true;
+        this.ship.collisionEnabled = true;
+        // Reset score when entering playing state
+        this.score = 0;
         // Start asteroid timer
         this.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
     }
@@ -114,6 +121,13 @@ export class PlayingState implements GameState {
         this.bullets.forEach(b => b.draw(ctx));
         this.particleManager.draw(ctx);
         this.ship.draw(ctx);
+        
+        // Draw score
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Score: ${this.score}`, 20, 20);
     }
 
     exit(_game: Game): void { }
@@ -193,6 +207,9 @@ export class PlayingState implements GameState {
                     this.particleManager.createExplosion(asteroid.x, asteroid.y, ASTEROID_COLOR);
                     this.asteroids.splice(i, 1);
                     this.bullets.splice(j, 1);
+                    
+                    // Award points for destroying asteroid
+                    this.score += ASTEROID_POINTS;
 
                     game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
                     game.startFreeze(ASTEROID_HIT_FREEZE_DURATION, () => {
