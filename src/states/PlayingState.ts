@@ -53,19 +53,23 @@ export class PlayingState implements GameState {
 
     exit(_game: Game): void { }
 
-    startExplosion() {
+    startExplosion(): void {
         this.particleManager.createExplosion(SHIP_COLLISION_X, this.ship.y);
         this.ship.visible = false;
     }
 
-    updateDuringExplosion(deltaTime: number) {
+    updateDuringExplosion(deltaTime: number): void {
         this.starfield.update(deltaTime);
         this.updateBullets(deltaTime);
         this.updateAsteroids(deltaTime);
         this.particleManager.update(deltaTime);
     }
 
-    respawn() {
+    canRespawn(): boolean {
+        return this.particleManager.particles.length === 0;
+    }
+
+    respawn(): void {
         this.ship.y = GAME_HEIGHT / 2;
         this.ship.visible = true;
         this.asteroids = [];

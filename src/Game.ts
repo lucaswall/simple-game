@@ -40,7 +40,7 @@ export class Game {
     }
 
     startExplosion() {
-        if (this.currentState instanceof PlayingState) {
+        if (this.currentState.startExplosion) {
             this.currentState.startExplosion();
             this.explosionTimer = EXPLOSION_DURATION;
             this.timeScale = EXPLOSION_TIME_SCALE;
@@ -48,7 +48,7 @@ export class Game {
     }
 
     respawn() {
-        if (this.currentState instanceof PlayingState) {
+        if (this.currentState.respawn) {
             this.currentState.respawn();
             this.timeScale = 1.0;
             this.explosionTimer = 0;
@@ -85,14 +85,14 @@ export class Game {
             this.explosionTimer -= scaledDeltaTime;
             
             // Update environment during explosion (with time scale)
-            if (this.currentState instanceof PlayingState) {
+            if (this.currentState.updateDuringExplosion) {
                 this.currentState.updateDuringExplosion(scaledDeltaTime);
+            }
 
-                // Respawn when timer expires and particles are gone
-                if (this.explosionTimer <= 0 && this.currentState.particleManager.particles.length === 0) {
-                    this.respawn();
-                    this.toPlaying();
-                }
+            // Respawn when timer expires and state indicates it can respawn
+            if (this.explosionTimer <= 0 && this.currentState.canRespawn && this.currentState.canRespawn()) {
+                this.respawn();
+                this.toPlaying();
             }
             return;
         }
