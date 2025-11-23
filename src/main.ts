@@ -8,6 +8,17 @@ const GAME_WIDTH = 1280;
 const GAME_HEIGHT = 720;
 const SHIP_SPEED = 400; // Pixels per second
 const SHIP_SIZE = 30;
+const STAR_COUNT = 150;
+const STAR_MIN_SPEED = 50;
+const STAR_MAX_SPEED = 200;
+
+interface Star {
+    x: number;
+    y: number;
+    size: number;
+    speed: number;
+    brightness: number;
+}
 
 // Set logical resolution
 canvas.width = GAME_WIDTH;
@@ -20,6 +31,19 @@ const keys = {
     ArrowUp: false,
     ArrowDown: false
 };
+
+const stars: Star[] = [];
+
+// Initialize Stars
+for (let i = 0; i < STAR_COUNT; i++) {
+    stars.push({
+        x: Math.random() * GAME_WIDTH,
+        y: Math.random() * GAME_HEIGHT,
+        size: Math.random() * 2 + 1, // 1 to 3 pixels
+        speed: Math.random() * (STAR_MAX_SPEED - STAR_MIN_SPEED) + STAR_MIN_SPEED,
+        brightness: Math.random()
+    });
+}
 
 // Input Handling
 window.addEventListener('keydown', (e) => {
@@ -55,12 +79,27 @@ function update(deltaTime: number) {
 
     // Clamp ship position
     shipY = Math.max(SHIP_SIZE, Math.min(GAME_HEIGHT - SHIP_SIZE, shipY));
+
+    // Update Stars
+    stars.forEach(star => {
+        star.x -= star.speed * deltaTime;
+        if (star.x < 0) {
+            star.x = GAME_WIDTH;
+            star.y = Math.random() * GAME_HEIGHT;
+        }
+    });
 }
 
 function draw() {
     // Clear screen
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // Draw Stars
+    stars.forEach(star => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
 
     // Draw Ship (Triangle)
     ctx.fillStyle = '#fff';
