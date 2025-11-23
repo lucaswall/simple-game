@@ -1,4 +1,6 @@
 
+
+
 import './style.css'
 
 const canvas = document.querySelector<HTMLCanvasElement>('#gameCanvas')!;
@@ -24,7 +26,8 @@ const SHAKE_DECAY = 500; // Pixels per second decay
 enum GameState {
     PLAYING,
     HIT_FREEZE,
-    EXPLODING
+    EXPLODING,
+    ASTEROID_HIT_FREEZE
 }
 
 interface Star {
@@ -54,6 +57,13 @@ interface Particle {
     size: number;
 }
 
+interface Bullet {
+    x: number;
+    y: number;
+    speed: number;
+    size: number;
+}
+
 // Set logical resolution
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
@@ -68,13 +78,16 @@ let isPaused = false;
 let shipY = GAME_HEIGHT / 2;
 const keys = {
     ArrowUp: false,
-    ArrowDown: false
+    ArrowDown: false,
+    Space: false
 };
 
 const stars: Star[] = [];
 let asteroids: Asteroid[] = [];
 let particles: Particle[] = [];
+let bullets: Bullet[] = [];
 let asteroidTimer = 0;
+let lastShotTime = 0;
 
 // Initialize Stars
 for (let i = 0; i < STAR_COUNT; i++) {
@@ -133,7 +146,7 @@ function gameLoop(timestamp: number) {
     requestAnimationFrame(gameLoop);
 }
 
-function createExplosion(x: number, y: number) {
+function createExplosion(x: number, y: number, color: string = `hsl(${Math.random() * 60 + 10}, 100%, 50%)`) {
     for (let i = 0; i < 30; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 200 + 50;
@@ -144,7 +157,7 @@ function createExplosion(x: number, y: number) {
             vy: Math.sin(angle) * speed,
             life: Math.random() * 0.5 + 0.5,
             maxLife: 1.0,
-            color: `hsl(${Math.random() * 60 + 10}, 100%, 50%)`, // Orange/Yellow fire colors
+            color: color,
             size: Math.random() * 4 + 2
         });
     }
@@ -161,21 +174,29 @@ function update(deltaTime: number) {
     switch (gameState) {
         case GameState.PLAYING:
             updateShip(deltaTime);
+            updateBullets(deltaTime);
             updateEnvironment(deltaTime);
+            updateParticles(deltaTime);
             checkCollisions();
             break;
         case GameState.HIT_FREEZE:
+        case GameState.ASTEROID_HIT_FREEZE:
             stateTimer -= deltaTime;
             if (stateTimer <= 0) {
-                gameState = GameState.EXPLODING;
-                stateTimer = EXPLOSION_DURATION;
-                createExplosion(75, shipY); // Ship is at x=75 roughly
-                shipY = -1000; // Hide ship
+                if (gameState === GameState.HIT_FREEZE) {
+                    gameState = GameState.EXPLODING;
+                    stateTimer = EXPLOSION_DURATION;
+                    createExplosion(75, shipY); // Ship is at x=75 roughly
+                    shipY = -1000; // Hide ship
+                } else {
+                    gameState = GameState.PLAYING;
+                }
             }
             break;
         case GameState.EXPLODING:
             stateTimer -= deltaTime;
             updateEnvironment(deltaTime); // Keep environment moving!
+            updateBullets(deltaTime); // Keep bullets moving!
             updateParticles(deltaTime);
             if (stateTimer <= 0 && particles.length === 0) {
                 // Respawn
@@ -198,6 +219,30 @@ function updateShip(deltaTime: number) {
 
     // Clamp ship position
     shipY = Math.max(SHIP_SIZE, Math.min(GAME_HEIGHT - SHIP_SIZE, shipY));
+
+    // Shooting
+    if (keys.Space) {
+        const now = performance.now();
+        if (now - lastShotTime > 250) { // 0.25s cooldown
+            bullets.push({
+                x: 100, // Ship nose
+                y: shipY,
+                speed: 800,
+                size: 5
+            });
+            lastShotTime = now;
+        }
+    }
+}
+
+function updateBullets(deltaTime: number) {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.speed * deltaTime;
+        if (b.x > GAME_WIDTH) {
+            bullets.splice(i, 1);
+        }
+    }
 }
 
 function updateEnvironment(deltaTime: number) {
@@ -246,8 +291,8 @@ function updateEnvironment(deltaTime: number) {
 }
 
 function checkCollisions() {
-    asteroids.forEach((asteroid) => {
-        // Collision Detection
+    asteroids.forEach((asteroid, aIndex) => {
+        // Collision Detection (Ship)
         const dx = asteroid.x - 75;
         const dy = asteroid.y - shipY;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -257,6 +302,26 @@ function checkCollisions() {
             gameState = GameState.HIT_FREEZE;
             stateTimer = HIT_FREEZE_DURATION;
             shakeIntensity = 20; // Shake screen
+        }
+
+        // Collision Detection (Bullets)
+        for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+            const b = bullets[bIndex];
+            const bdx = asteroid.x - b.x;
+            const bdy = asteroid.y - b.y;
+            const bDist = Math.sqrt(bdx * bdx + bdy * bdy);
+
+            if (bDist < asteroid.size + b.size) {
+                // Bullet Hit!
+                createExplosion(asteroid.x, asteroid.y, '#888'); // Grey explosion
+                asteroids.splice(aIndex, 1);
+                bullets.splice(bIndex, 1);
+
+                gameState = GameState.ASTEROID_HIT_FREEZE;
+                stateTimer = 0.05; // Short freeze
+                shakeIntensity = 10; // Small shake
+                break; // Asteroid gone, stop checking bullets for this asteroid
+            }
         }
     });
 }
@@ -304,6 +369,14 @@ function draw() {
             }
         }
         ctx.closePath();
+        ctx.fill();
+    });
+
+    // Draw Bullets
+    ctx.fillStyle = '#ff0';
+    bullets.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
         ctx.fill();
     });
 
