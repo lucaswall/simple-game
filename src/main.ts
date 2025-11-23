@@ -1,3 +1,4 @@
+
 import './style.css'
 
 const canvas = document.querySelector<HTMLCanvasElement>('#gameCanvas')!;
@@ -15,6 +16,17 @@ const ASTEROID_MIN_SPEED = 200;
 const ASTEROID_MAX_SPEED = 400;
 const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
 
+// Visual Effects Constants
+const HIT_FREEZE_DURATION = 0.1; // Seconds
+const EXPLOSION_DURATION = 1.0; // Seconds
+const SHAKE_DECAY = 500; // Pixels per second decay
+
+enum GameState {
+    PLAYING,
+    HIT_FREEZE,
+    EXPLODING
+}
+
 interface Star {
     x: number;
     y: number;
@@ -31,12 +43,27 @@ interface Asteroid {
     vertices: { x: number; y: number }[];
 }
 
+interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    maxLife: number;
+    color: string;
+    size: number;
+}
+
 // Set logical resolution
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
 // Game State
 let lastTime = 0;
+let gameState: GameState = GameState.PLAYING;
+let stateTimer = 0;
+let shakeIntensity = 0;
+
 let shipY = GAME_HEIGHT / 2;
 const keys = {
     ArrowUp: false,
@@ -44,7 +71,8 @@ const keys = {
 };
 
 const stars: Star[] = [];
-const asteroids: Asteroid[] = [];
+let asteroids: Asteroid[] = [];
+let particles: Particle[] = [];
 let asteroidTimer = 0;
 
 // Initialize Stars
@@ -82,7 +110,62 @@ function gameLoop(timestamp: number) {
     requestAnimationFrame(gameLoop);
 }
 
+function createExplosion(x: number, y: number) {
+    for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 200 + 50;
+        particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: Math.random() * 0.5 + 0.5,
+            maxLife: 1.0,
+            color: `hsl(${Math.random() * 60 + 10}, 100%, 50%)`, // Orange/Yellow fire colors
+            size: Math.random() * 4 + 2
+        });
+    }
+}
+
 function update(deltaTime: number) {
+    // Update Shake
+    if (shakeIntensity > 0) {
+        shakeIntensity -= SHAKE_DECAY * deltaTime;
+        if (shakeIntensity < 0) shakeIntensity = 0;
+    }
+
+    // State Machine
+    switch (gameState) {
+        case GameState.PLAYING:
+            updateShip(deltaTime);
+            updateEnvironment(deltaTime);
+            checkCollisions();
+            break;
+        case GameState.HIT_FREEZE:
+            stateTimer -= deltaTime;
+            if (stateTimer <= 0) {
+                gameState = GameState.EXPLODING;
+                stateTimer = EXPLOSION_DURATION;
+                createExplosion(75, shipY); // Ship is at x=75 roughly
+                shipY = -1000; // Hide ship
+            }
+            break;
+        case GameState.EXPLODING:
+            stateTimer -= deltaTime;
+            updateEnvironment(deltaTime); // Keep environment moving!
+            updateParticles(deltaTime);
+            if (stateTimer <= 0 && particles.length === 0) {
+                // Respawn
+                gameState = GameState.PLAYING;
+                shipY = GAME_HEIGHT / 2;
+                asteroids = []; // Clear board
+                asteroidTimer = 0;
+            }
+            break;
+    }
+}
+
+function updateShip(deltaTime: number) {
     if (keys.ArrowUp) {
         shipY -= SHIP_SPEED * deltaTime;
     }
@@ -92,7 +175,9 @@ function update(deltaTime: number) {
 
     // Clamp ship position
     shipY = Math.max(SHIP_SIZE, Math.min(GAME_HEIGHT - SHIP_SIZE, shipY));
+}
 
+function updateEnvironment(deltaTime: number) {
     // Update Stars
     stars.forEach(star => {
         star.x -= star.speed * deltaTime;
@@ -105,13 +190,13 @@ function update(deltaTime: number) {
     // Update Asteroids
     asteroidTimer -= deltaTime;
     if (asteroidTimer <= 0) {
-        const size = Math.random() * 15 + 15; // 15 to 30 pixels (smaller)
-        const vertexCount = Math.floor(Math.random() * 5) + 5; // 5 to 9 vertices
+        const size = Math.random() * 15 + 15;
+        const vertexCount = Math.floor(Math.random() * 5) + 5;
         const vertices = [];
 
         for (let i = 0; i < vertexCount; i++) {
             const angle = (i / vertexCount) * Math.PI * 2;
-            const radius = size * (0.5 + Math.random() * 0.5); // Vary radius for jaggedness
+            const radius = size * (0.5 + Math.random() * 0.5);
             vertices.push({
                 x: Math.cos(angle) * radius,
                 y: Math.sin(angle) * radius
@@ -134,26 +219,50 @@ function update(deltaTime: number) {
         if (asteroid.x + asteroid.size < 0) {
             asteroids.splice(index, 1);
         }
+    });
+}
 
+function checkCollisions() {
+    asteroids.forEach((asteroid) => {
         // Collision Detection
-        // Ship approximate center: (75, shipY)
-        // Ship approximate radius: 15 (SHIP_SIZE / 2)
         const dx = asteroid.x - 75;
         const dy = asteroid.y - shipY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < asteroid.size + 15) {
-            // Collision detected!
-            shipY = GAME_HEIGHT / 2;
-            // Optional: Add explosion effect or sound here later
+            // Hit!
+            gameState = GameState.HIT_FREEZE;
+            stateTimer = HIT_FREEZE_DURATION;
+            shakeIntensity = 20; // Shake screen
         }
     });
+}
+
+function updateParticles(deltaTime: number) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * deltaTime;
+        p.y += p.vy * deltaTime;
+        p.life -= deltaTime;
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
 }
 
 function draw() {
     // Clear screen
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    ctx.save();
+
+    // Apply Camera Shake
+    if (shakeIntensity > 0) {
+        const dx = (Math.random() - 0.5) * shakeIntensity;
+        const dy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(dx, dy);
+    }
 
     // Draw Stars
     stars.forEach(star => {
@@ -165,7 +274,6 @@ function draw() {
     ctx.fillStyle = '#888';
     asteroids.forEach(asteroid => {
         ctx.beginPath();
-        // Draw polygon based on vertices relative to asteroid center
         if (asteroid.vertices.length > 0) {
             ctx.moveTo(asteroid.x + asteroid.vertices[0].x, asteroid.y + asteroid.vertices[0].y);
             for (let i = 1; i < asteroid.vertices.length; i++) {
@@ -176,14 +284,28 @@ function draw() {
         ctx.fill();
     });
 
-    // Draw Ship (Triangle)
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(100, shipY); // Nose
-    ctx.lineTo(50, shipY - SHIP_SIZE / 2); // Top back
-    ctx.lineTo(50, shipY + SHIP_SIZE / 2); // Bottom back
-    ctx.closePath();
-    ctx.fill();
+    // Draw Particles
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life / p.maxLife;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    });
+
+    // Draw Ship (only if not exploding/hidden)
+    if (gameState !== GameState.EXPLODING) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(100, shipY); // Nose
+        ctx.lineTo(50, shipY - SHIP_SIZE / 2); // Top back
+        ctx.lineTo(50, shipY + SHIP_SIZE / 2); // Bottom back
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
 }
 
 // Start the loop
