@@ -2,7 +2,7 @@
 
 A simple 2D side-scrolling space game built with Vanilla JavaScript and TypeScript.
 
-> **Note**: This is a test vibe coding project written with Antigravity.
+> **Note**: This is a test vibe coding project written with Google Antigravity and Cursor.
 
 ## Getting Started
 
