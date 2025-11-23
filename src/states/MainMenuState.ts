@@ -2,7 +2,7 @@ import { GameState } from '../interfaces/GameState';
 import { Game } from '../Game';
 import { Starfield } from '../Starfield';
 import { Input } from '../Input';
-import { PlayingState } from './PlayingState';
+import { IntroState } from './IntroState';
 import { GAME_WIDTH, GAME_HEIGHT, MENU_TITLE_FONT_SIZE, MENU_SUBTITLE_FONT_SIZE } from '../Constants';
 
 export class MainMenuState implements GameState {
@@ -24,8 +24,8 @@ export class MainMenuState implements GameState {
 
         // Check for Space key to start the game
         if (this.input.keys.Space) {
-            const playingState = new PlayingState(this.input);
-            game.changeState(playingState);
+            const introState = new IntroState(this.input);
+            game.changeState(introState);
         }
     }
 
