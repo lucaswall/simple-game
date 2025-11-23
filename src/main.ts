@@ -11,6 +11,9 @@ const SHIP_SIZE = 30;
 const STAR_COUNT = 150;
 const STAR_MIN_SPEED = 50;
 const STAR_MAX_SPEED = 200;
+const ASTEROID_MIN_SPEED = 200;
+const ASTEROID_MAX_SPEED = 400;
+const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
 
 interface Star {
     x: number;
@@ -18,6 +21,14 @@ interface Star {
     size: number;
     speed: number;
     brightness: number;
+}
+
+interface Asteroid {
+    x: number;
+    y: number;
+    size: number;
+    speed: number;
+    vertices: { x: number; y: number }[];
 }
 
 // Set logical resolution
@@ -33,6 +44,8 @@ const keys = {
 };
 
 const stars: Star[] = [];
+const asteroids: Asteroid[] = [];
+let asteroidTimer = 0;
 
 // Initialize Stars
 for (let i = 0; i < STAR_COUNT; i++) {
@@ -88,6 +101,40 @@ function update(deltaTime: number) {
             star.y = Math.random() * GAME_HEIGHT;
         }
     });
+
+    // Update Asteroids
+    asteroidTimer -= deltaTime;
+    if (asteroidTimer <= 0) {
+        const size = Math.random() * 15 + 15; // 15 to 30 pixels (smaller)
+        const vertexCount = Math.floor(Math.random() * 5) + 5; // 5 to 9 vertices
+        const vertices = [];
+
+        for (let i = 0; i < vertexCount; i++) {
+            const angle = (i / vertexCount) * Math.PI * 2;
+            const radius = size * (0.5 + Math.random() * 0.5); // Vary radius for jaggedness
+            vertices.push({
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * radius
+            });
+        }
+
+        asteroids.push({
+            x: GAME_WIDTH,
+            y: Math.random() * (GAME_HEIGHT - 40) + 20,
+            size: size,
+            speed: Math.random() * (ASTEROID_MAX_SPEED - ASTEROID_MIN_SPEED) + ASTEROID_MIN_SPEED,
+            vertices: vertices
+        });
+        asteroidTimer = ASTEROID_SPAWN_INTERVAL;
+    }
+
+    asteroids.forEach((asteroid, index) => {
+        asteroid.x -= asteroid.speed * deltaTime;
+        // Remove if off screen
+        if (asteroid.x + asteroid.size < 0) {
+            asteroids.splice(index, 1);
+        }
+    });
 }
 
 function draw() {
@@ -99,6 +146,21 @@ function draw() {
     stars.forEach(star => {
         ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
         ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
+
+    // Draw Asteroids
+    ctx.fillStyle = '#888';
+    asteroids.forEach(asteroid => {
+        ctx.beginPath();
+        // Draw polygon based on vertices relative to asteroid center
+        if (asteroid.vertices.length > 0) {
+            ctx.moveTo(asteroid.x + asteroid.vertices[0].x, asteroid.y + asteroid.vertices[0].y);
+            for (let i = 1; i < asteroid.vertices.length; i++) {
+                ctx.lineTo(asteroid.x + asteroid.vertices[i].x, asteroid.y + asteroid.vertices[i].y);
+            }
+        }
+        ctx.closePath();
+        ctx.fill();
     });
 
     // Draw Ship (Triangle)
