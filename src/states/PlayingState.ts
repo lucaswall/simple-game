@@ -7,6 +7,7 @@ import { Starfield } from '../Starfield';
 import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
 import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR, GAME_HEIGHT } from '../Constants';
+import { MainMenuState } from './MainMenuState';
 
 export class PlayingState implements GameState {
     input: Input;
@@ -27,6 +28,8 @@ export class PlayingState implements GameState {
 
     enter(_game: Game): void {
         this.ship.visible = true;
+        // Clear input keys to prevent immediate shooting when Space is used to start the game
+        this.input.clearKeys();
     }
 
     update(game: Game, deltaTime: number): void {
@@ -74,6 +77,11 @@ export class PlayingState implements GameState {
         this.ship.visible = true;
         this.asteroids = [];
         this.asteroidTimer = 0;
+    }
+
+    onGameOver(game: Game): void {
+        // Transition back to main menu
+        game.changeState(new MainMenuState(this.input));
     }
 
     private updateBullets(deltaTime: number) {

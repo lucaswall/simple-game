@@ -2,7 +2,7 @@
 import './style.css'
 import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE } from './Constants';
 import { Game } from './Game';
-import { PlayingState } from './states/PlayingState';
+import { MainMenuState } from './states/MainMenuState';
 import { Input } from './Input';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#gameCanvas')!;
@@ -12,9 +12,9 @@ const ctx = canvas.getContext('2d')!;
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
-// Create initial state
+// Create initial state (Main Menu)
 const input = new Input();
-const initialState = new PlayingState(input);
+const initialState = new MainMenuState(input);
 
 // Initialize Game with initial state
 const game = new Game(ctx, initialState);

@@ -58,3 +58,5 @@ export const EXPLOSION_TIME_SCALE = 1 / 3; // Time scale during explosion (1/3 =
 // UI constants
 export const PAUSE_OVERLAY_ALPHA = 0.5;
 export const PAUSE_FONT_SIZE = 48;
+export const MENU_TITLE_FONT_SIZE = 72;
+export const MENU_SUBTITLE_FONT_SIZE = 32;

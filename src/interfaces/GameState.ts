@@ -11,4 +11,5 @@ export interface GameState {
     updateDuringExplosion?(deltaTime: number): void;
     canRespawn?(): boolean;
     respawn?(): void;
+    onGameOver?(game: Game): void;
 }

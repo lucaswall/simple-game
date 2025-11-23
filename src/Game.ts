@@ -79,10 +79,12 @@ export class Game {
                 this.currentState.updateDuringExplosion(scaledDeltaTime);
             }
 
-            // Respawn when timer expires and state indicates it can respawn
+            // Transition to main menu when timer expires and state indicates it can respawn
             if (this.explosionTimer <= 0 && this.currentState.canRespawn && this.currentState.canRespawn()) {
-                this.respawn();
-                // State remains the same after respawn (e.g., PlayingState stays as PlayingState)
+                // Don't respawn, go back to main menu instead
+                if (this.currentState.onGameOver) {
+                    this.currentState.onGameOver(this);
+                }
             }
             return;
         }

@@ -18,4 +18,10 @@ export class Input {
             }
         });
     }
+
+    clearKeys(): void {
+        this.keys.ArrowUp = false;
+        this.keys.ArrowDown = false;
+        this.keys.Space = false;
+    }
 }
