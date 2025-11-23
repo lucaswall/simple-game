@@ -7,12 +7,162 @@ import { Input } from '../Input';
 import { PlayingState } from './PlayingState';
 import { SHIP_X_POSITION, SHIP_INTRO_CONSTANT_SPEED, SHIP_INTRO_DECELERATE_DURATION, SHIP_INTRO_START_RETURN_EASE_DURATION, SHIP_INTRO_STOP_FINAL_EASE_DURATION, SHIP_INTRO_OVERSHOOT, SHIP_INTRO_START_X, ASTEROID_SPAWN_INTERVAL } from '../Constants';
 
-enum IntroPhase {
-    ComingInConstant,      // Constant speed coming in
-    DeceleratingToOvershoot,  // Linear deceleration to zero speed at overshoot position
-    StartingReturn,        // Ease-in to start moving back
-    StoppingAtFinal,       // Ease-out to stop at final position
-    Complete
+// Context interface for intro phases
+interface IntroContext {
+    ship: Ship;
+    targetX: number;
+    overshootX: number;
+}
+
+// Base class for intro phases
+abstract class IntroPhase {
+    protected context: IntroContext;
+    protected timer: number = 0;
+    protected easeStartX: number = 0;
+
+    constructor(context: IntroContext) {
+        this.context = context;
+    }
+
+    abstract enter(): void;
+    abstract update(deltaTime: number): IntroPhase | null; // Returns next phase or null to stay
+    exit(): void { } // Optional exit logic
+}
+
+// Phase 1: Constant speed coming in
+class ComingInConstantPhase extends IntroPhase {
+    enter(): void {
+        this.timer = 0;
+    }
+
+    update(deltaTime: number): IntroPhase | null {
+        // Constant speed coming in
+        this.context.ship.x += SHIP_INTRO_CONSTANT_SPEED * deltaTime;
+        
+        // When we reach the point where we need to start decelerating to stop at overshoot
+        const distanceToOvershoot = this.context.overshootX - this.context.ship.x;
+        const distanceNeededToStop = SHIP_INTRO_CONSTANT_SPEED * SHIP_INTRO_DECELERATE_DURATION;
+        
+        if (distanceToOvershoot <= distanceNeededToStop) {
+            // Capture actual position when deceleration starts to avoid jumps
+            this.easeStartX = this.context.ship.x;
+            // Transition to deceleration phase
+            return new DeceleratingToOvershootPhase(this.context, this.easeStartX);
+        }
+        
+        return null; // Stay in this phase
+    }
+}
+
+// Phase 2: Linear deceleration to zero speed at overshoot position
+class DeceleratingToOvershootPhase extends IntroPhase {
+    constructor(context: IntroContext, easeStartX: number) {
+        super(context);
+        this.easeStartX = easeStartX;
+    }
+
+    enter(): void {
+        this.timer = 0;
+    }
+
+    update(deltaTime: number): IntroPhase | null {
+        this.timer += deltaTime;
+        
+        if (this.timer >= SHIP_INTRO_DECELERATE_DURATION) {
+            // Reached overshoot position (speed is now zero), immediately start returning
+            this.context.ship.x = this.context.overshootX;
+            return new StartingReturnPhase(this.context);
+        } else {
+            // Linear deceleration: speed goes from constant to zero
+            // Position: linear interpolation from start position to overshoot
+            const t = this.timer / SHIP_INTRO_DECELERATE_DURATION;
+            // Linear interpolation (no easing)
+            const remainingDistance = this.context.overshootX - this.easeStartX;
+            this.context.ship.x = this.easeStartX + (remainingDistance * t);
+        }
+        
+        return null; // Stay in this phase
+    }
+}
+
+// Phase 3: Ease-in to start moving back
+class StartingReturnPhase extends IntroPhase {
+    private easeInDistance: number = 0;
+
+    enter(): void {
+        this.timer = 0;
+        // Calculate ease-in distance
+        const totalReturnDistance = this.context.overshootX - this.context.targetX;
+        const totalReturnTime = SHIP_INTRO_START_RETURN_EASE_DURATION + SHIP_INTRO_STOP_FINAL_EASE_DURATION;
+        const easeInRatio = SHIP_INTRO_START_RETURN_EASE_DURATION / totalReturnTime;
+        this.easeInDistance = totalReturnDistance * easeInRatio;
+    }
+
+    update(deltaTime: number): IntroPhase | null {
+        this.timer += deltaTime;
+        
+        if (this.timer >= SHIP_INTRO_START_RETURN_EASE_DURATION) {
+            // Finished easing in, now start easing out to final position
+            this.context.ship.x = this.context.overshootX - this.easeInDistance;
+            return new StoppingAtFinalPhase(this.context, this.easeInDistance);
+        } else {
+            // Ease-in to start moving back: speed goes from zero to some speed
+            // Position: ease from overshoot position
+            const t = this.timer / SHIP_INTRO_START_RETURN_EASE_DURATION;
+            const eased = t * t * t; // Ease-in curve (t^3)
+            const distanceMoved = this.easeInDistance * eased;
+            this.context.ship.x = this.context.overshootX - distanceMoved;
+        }
+        
+        return null; // Stay in this phase
+    }
+}
+
+// Phase 4: Ease-out to stop at final position
+class StoppingAtFinalPhase extends IntroPhase {
+    private easeOutDistance: number;
+    private startFinalX: number;
+
+    constructor(context: IntroContext, easeInDistance: number) {
+        super(context);
+        const totalReturnDistance = context.overshootX - context.targetX;
+        this.easeOutDistance = totalReturnDistance - easeInDistance;
+        this.startFinalX = context.overshootX - easeInDistance;
+    }
+
+    enter(): void {
+        this.timer = 0;
+    }
+
+    update(deltaTime: number): IntroPhase | null {
+        this.timer += deltaTime;
+        
+        if (this.timer >= SHIP_INTRO_STOP_FINAL_EASE_DURATION) {
+            // Stopped at final position (speed is now zero)
+            this.context.ship.x = this.context.targetX;
+            return new CompletePhase(this.context);
+        } else {
+            // Ease-out to stop: speed goes from some speed to zero
+            // Position: ease from startFinalX to targetX
+            const t = this.timer / SHIP_INTRO_STOP_FINAL_EASE_DURATION;
+            const eased = 1 - Math.pow(1 - t, 3); // Ease-out curve
+            this.context.ship.x = this.startFinalX - (this.easeOutDistance * eased);
+        }
+        
+        return null; // Stay in this phase
+    }
+}
+
+// Phase 5: Intro complete
+class CompletePhase extends IntroPhase {
+    enter(): void {
+        // Intro is complete, this phase just marks completion
+    }
+
+    update(_deltaTime: number): IntroPhase | null {
+        // This phase never transitions, IntroState handles completion
+        return null;
+    }
 }
 
 export class IntroState implements GameState {
@@ -20,23 +170,35 @@ export class IntroState implements GameState {
     starfield: Starfield;
     ship: Ship;
     bullets: Bullet[];
-    private phase: IntroPhase = IntroPhase.ComingInConstant;
-    private timer: number = 0;
-    private easeStartX: number = 0;
+    private currentPhase: IntroPhase;
+    private context: IntroContext;
 
     constructor(input: Input) {
         this.input = input;
         this.starfield = new Starfield();
         this.bullets = [];
         this.ship = new Ship(this.input, this.bullets);
+        
+        // Create context for phases
+        this.context = {
+            ship: this.ship,
+            targetX: SHIP_X_POSITION,
+            overshootX: SHIP_X_POSITION + SHIP_INTRO_OVERSHOOT
+        };
+        
+        // Start with first phase
+        this.currentPhase = new ComingInConstantPhase(this.context);
     }
 
     enter(_game: Game): void {
         this.ship.visible = true;
         this.ship.controllable = false;
         this.ship.x = SHIP_INTRO_START_X; // Start off-screen to the left
-        this.phase = IntroPhase.ComingInConstant;
-        this.timer = 0;
+        
+        // Reset to first phase
+        this.currentPhase = new ComingInConstantPhase(this.context);
+        this.currentPhase.enter();
+        
         // Clear input keys to prevent immediate shooting when Space is used to start the game
         this.input.clearKeys();
     }
@@ -45,10 +207,18 @@ export class IntroState implements GameState {
         this.starfield.update(deltaTime);
         this.ship.update(deltaTime);
 
-        // Update intro animation
-        if (this.phase !== IntroPhase.Complete) {
-            this.updateIntro(deltaTime);
-        } else {
+        // Update current phase
+        const nextPhase = this.currentPhase.update(deltaTime);
+        
+        if (nextPhase !== null) {
+            // Transition to next phase
+            this.currentPhase.exit();
+            this.currentPhase = nextPhase;
+            this.currentPhase.enter();
+        }
+
+        // Check if intro is complete
+        if (this.currentPhase instanceof CompletePhase) {
             // Intro complete, transition to PlayingState
             const playingState = new PlayingState(this.input);
             // Transfer entities to playing state
@@ -69,98 +239,4 @@ export class IntroState implements GameState {
     }
 
     exit(_game: Game): void { }
-
-    private updateIntro(deltaTime: number): void {
-        const targetX = SHIP_X_POSITION;
-        const overshootX = targetX + SHIP_INTRO_OVERSHOOT;
-
-        switch (this.phase) {
-            case IntroPhase.ComingInConstant:
-                // Constant speed coming in
-                this.ship.x += SHIP_INTRO_CONSTANT_SPEED * deltaTime;
-                
-                // When we reach the point where we need to start decelerating to stop at overshoot
-                const distanceToOvershoot = overshootX - this.ship.x;
-                const distanceNeededToStop = SHIP_INTRO_CONSTANT_SPEED * SHIP_INTRO_DECELERATE_DURATION;
-                
-                if (distanceToOvershoot <= distanceNeededToStop) {
-                    // Capture actual position when deceleration starts to avoid jumps
-                    this.easeStartX = this.ship.x;
-                    // Start linear deceleration to stop at overshoot
-                    this.phase = IntroPhase.DeceleratingToOvershoot;
-                    this.timer = 0;
-                }
-                break;
-
-            case IntroPhase.DeceleratingToOvershoot:
-                this.timer += deltaTime;
-                
-                if (this.timer >= SHIP_INTRO_DECELERATE_DURATION) {
-                    // Reached overshoot position (speed is now zero), immediately start returning
-                    this.ship.x = overshootX;
-                    this.phase = IntroPhase.StartingReturn;
-                    this.timer = 0;
-                } else {
-                    // Linear deceleration: speed goes from constant to zero
-                    // Position: linear interpolation from start position to overshoot
-                    const t = this.timer / SHIP_INTRO_DECELERATE_DURATION;
-                    // Linear interpolation (no easing)
-                    const remainingDistance = overshootX - this.easeStartX;
-                    this.ship.x = this.easeStartX + (remainingDistance * t);
-                }
-                break;
-
-            case IntroPhase.StartingReturn:
-                this.timer += deltaTime;
-                
-                if (this.timer >= SHIP_INTRO_START_RETURN_EASE_DURATION) {
-                    // Finished easing in, now start easing out to final position
-                    // Calculate how far we moved during ease-in
-                    const totalReturnDistance = overshootX - targetX;
-                    // During ease-in, we cover distance proportional to the duration ratio
-                    const totalReturnTime = SHIP_INTRO_START_RETURN_EASE_DURATION + SHIP_INTRO_STOP_FINAL_EASE_DURATION;
-                    const easeInRatio = SHIP_INTRO_START_RETURN_EASE_DURATION / totalReturnTime;
-                    const easeInDistance = totalReturnDistance * easeInRatio;
-                    this.ship.x = overshootX - easeInDistance;
-                    this.phase = IntroPhase.StoppingAtFinal;
-                    this.timer = 0;
-                } else {
-                    // Ease-in to start moving back: speed goes from zero to some speed
-                    // Position: ease from overshoot position
-                    const t = this.timer / SHIP_INTRO_START_RETURN_EASE_DURATION;
-                    const eased = t * t * t; // Ease-in curve (t^3)
-                    const totalReturnDistance = overshootX - targetX;
-                    const totalReturnTime = SHIP_INTRO_START_RETURN_EASE_DURATION + SHIP_INTRO_STOP_FINAL_EASE_DURATION;
-                    const easeInRatio = SHIP_INTRO_START_RETURN_EASE_DURATION / totalReturnTime;
-                    const easeInDistance = totalReturnDistance * easeInRatio;
-                    const distanceMoved = easeInDistance * eased;
-                    this.ship.x = overshootX - distanceMoved;
-                }
-                break;
-
-            case IntroPhase.StoppingAtFinal:
-                this.timer += deltaTime;
-                
-                const totalReturnDistance = overshootX - targetX;
-                const totalReturnTime = SHIP_INTRO_START_RETURN_EASE_DURATION + SHIP_INTRO_STOP_FINAL_EASE_DURATION;
-                const easeInRatio = SHIP_INTRO_START_RETURN_EASE_DURATION / totalReturnTime;
-                const easeInDistance = totalReturnDistance * easeInRatio;
-                const easeOutDistance = totalReturnDistance - easeInDistance;
-                const startFinalX = overshootX - easeInDistance;
-                
-                if (this.timer >= SHIP_INTRO_STOP_FINAL_EASE_DURATION) {
-                    // Stopped at final position (speed is now zero)
-                    this.ship.x = targetX;
-                    this.phase = IntroPhase.Complete;
-                } else {
-                    // Ease-out to stop: speed goes from some speed to zero
-                    // Position: ease from startFinalX to targetX
-                    const t = this.timer / SHIP_INTRO_STOP_FINAL_EASE_DURATION;
-                    const eased = 1 - Math.pow(1 - t, 3); // Ease-out curve
-                    this.ship.x = startFinalX - (easeOutDistance * eased);
-                }
-                break;
-        }
-    }
 }
-
