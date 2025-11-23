@@ -8,7 +8,6 @@ import { GAME_WIDTH, GAME_HEIGHT, MENU_TITLE_FONT_SIZE, MENU_SUBTITLE_FONT_SIZE 
 export class MainMenuState implements GameState {
     starfield: Starfield;
     input: Input;
-    private keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
     constructor(input: Input) {
         this.input = input;
@@ -16,17 +15,18 @@ export class MainMenuState implements GameState {
     }
 
     enter(_game: Game): void {
-        // Set up key listener for any key press
-        this.keyHandler = (e: KeyboardEvent) => {
-            // Any key press starts the game
-            const playingState = new PlayingState(this.input);
-            _game.changeState(playingState);
-        };
-        window.addEventListener('keydown', this.keyHandler);
+        // Clear input keys to ensure clean state
+        this.input.clearKeys();
     }
 
     update(game: Game, deltaTime: number): void {
         this.starfield.update(deltaTime);
+
+        // Check for Space key to start the game
+        if (this.input.keys.Space) {
+            const playingState = new PlayingState(this.input);
+            game.changeState(playingState);
+        }
     }
 
     draw(_game: Game, ctx: CanvasRenderingContext2D): void {
@@ -42,15 +42,9 @@ export class MainMenuState implements GameState {
 
         // Draw subtitle
         ctx.font = `${MENU_SUBTITLE_FONT_SIZE}px sans-serif`;
-        ctx.fillText('Press any key to start', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50);
+        ctx.fillText('Press Space to start', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50);
     }
 
-    exit(_game: Game): void {
-        // Clean up key listener
-        if (this.keyHandler) {
-            window.removeEventListener('keydown', this.keyHandler);
-            this.keyHandler = null;
-        }
-    }
+    exit(_game: Game): void { }
 }
 
