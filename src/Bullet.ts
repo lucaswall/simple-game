@@ -1,0 +1,31 @@
+import { Actor } from './interfaces/Actor';
+import { GAME_WIDTH } from './Constants';
+
+export class Bullet implements Actor {
+    x: number;
+    y: number;
+    speed: number;
+    size: number;
+    active: boolean = true;
+
+    constructor(x: number, y: number, speed: number, size: number) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+        this.size = size;
+    }
+
+    update(deltaTime: number): void {
+        this.x += this.speed * deltaTime;
+        if (this.x > GAME_WIDTH) {
+            this.active = false;
+        }
+    }
+
+    draw(ctx: CanvasRenderingContext2D): void {
+        ctx.fillStyle = '#ff0';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
