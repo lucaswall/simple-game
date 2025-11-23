@@ -53,6 +53,7 @@ export const SHAKE_INTENSITY_ASTEROID_HIT = 10;
 export const HIT_FREEZE_DURATION = 0.1; // Seconds
 export const EXPLOSION_DURATION = 1.0; // Seconds
 export const ASTEROID_HIT_FREEZE_DURATION = 0.05; // Seconds
+export const EXPLOSION_TIME_SCALE = 1 / 3; // Time scale during explosion (1/3 = slower)
 
 // UI constants
 export const PAUSE_OVERLAY_ALPHA = 0.5;
