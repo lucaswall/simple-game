@@ -12,6 +12,7 @@ export class Ship implements Actor {
     private lastShotTime: number = 0;
     visible: boolean = true;
     controllable: boolean = true;
+    collisionEnabled: boolean = true;
 
     constructor(input: Input, bullets: Bullet[]) {
         this.input = input;
