@@ -1,7 +1,8 @@
 import { Actor } from './interfaces/Actor';
 import { Input } from './Input';
 import { Bullet } from './Bullet';
-import { GAME_HEIGHT, SHIP_SPEED, SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE } from './Constants';
+import { GAME_HEIGHT, SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from './Constants';
+import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE } from './states/PlayingState';
 
 export class Ship implements Actor {
     x: number = SHIP_X_POSITION;

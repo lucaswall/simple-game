@@ -6,8 +6,51 @@ import { Bullet } from '../Bullet';
 import { Starfield } from '../Starfield';
 import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
-import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR, EXPLOSION_DURATION, EXPLOSION_TIME_SCALE, SHIP_X_POSITION } from '../Constants';
+import { SHIP_X_POSITION } from '../Constants';
 import { MainMenuState } from './MainMenuState';
+
+// Gameplay-specific constants
+const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
+const HIT_FREEZE_DURATION = 0.1; // Seconds
+const SHIP_COLLISION_X = 75; // X position for collision detection
+const SHIP_COLLISION_RADIUS = 15; // Collision radius
+const SHAKE_INTENSITY_SHIP_HIT = 20;
+const SHAKE_INTENSITY_ASTEROID_HIT = 10;
+const ASTEROID_HIT_FREEZE_DURATION = 0.05; // Seconds
+const EXPLOSION_DURATION = 1.0; // Seconds
+const EXPLOSION_TIME_SCALE = 1 / 3; // Time scale during explosion (1/3 = slower)
+
+// Asteroid constants (used only in gameplay)
+export const ASTEROID_MIN_SPEED = 200;
+export const ASTEROID_MAX_SPEED = 400;
+export const ASTEROID_SPAWN_Y_MARGIN = 40; // Margin from top/bottom
+export const ASTEROID_SPAWN_Y_OFFSET = 20; // Minimum y offset from top
+export const ASTEROID_MIN_SIZE = 15;
+export const ASTEROID_MAX_SIZE = 30;
+export const ASTEROID_MIN_VERTICES = 5;
+export const ASTEROID_MAX_VERTICES = 10;
+export const ASTEROID_RADIUS_MIN_FACTOR = 0.5; // Minimum radius factor
+export const ASTEROID_RADIUS_MAX_FACTOR = 1.0; // Maximum radius factor
+export const ASTEROID_COLOR = '#888';
+
+// Particle constants (used only in gameplay)
+export const PARTICLE_COUNT_PER_EXPLOSION = 30;
+export const PARTICLE_MIN_SPEED = 50;
+export const PARTICLE_MAX_SPEED = 250;
+export const PARTICLE_MIN_LIFE = 0.5; // Seconds
+export const PARTICLE_MAX_LIFE = 1.0; // Seconds
+export const PARTICLE_MIN_SIZE = 2;
+export const PARTICLE_MAX_SIZE = 6;
+export const PARTICLE_HUE_MIN = 10; // HSL hue minimum
+export const PARTICLE_HUE_MAX = 70; // HSL hue maximum
+
+// Ship gameplay constants
+export const SHIP_SPEED = 400; // Pixels per second
+export const SHIP_FIRE_RATE_MS = 250; // Milliseconds between shots
+
+// Bullet gameplay constants
+export const BULLET_SPEED = 800; // Pixels per second
+export const BULLET_SIZE = 5; // Radius
 
 export class PlayingState implements GameState {
     input: Input;
