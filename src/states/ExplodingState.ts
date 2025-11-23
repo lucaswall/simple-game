@@ -1,7 +1,7 @@
 
 import { GameState } from '../interfaces/GameState';
 import { Game } from '../Game';
-import { EXPLOSION_DURATION, GAME_HEIGHT } from '../Constants';
+import { EXPLOSION_DURATION, GAME_HEIGHT, SHIP_COLLISION_X } from '../Constants';
 
 export class ExplodingState implements GameState {
     private timer: number;
@@ -11,7 +11,7 @@ export class ExplodingState implements GameState {
     }
 
     enter(game: Game): void {
-        game.particleManager.createExplosion(75, game.ship.y);
+        game.particleManager.createExplosion(SHIP_COLLISION_X, game.ship.y);
         game.ship.visible = false;
     }
 

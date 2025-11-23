@@ -1,4 +1,5 @@
 import { Actor } from './interfaces/Actor';
+import { PARTICLE_COUNT_PER_EXPLOSION, PARTICLE_MIN_SPEED, PARTICLE_MAX_SPEED, PARTICLE_MIN_LIFE, PARTICLE_MAX_LIFE, PARTICLE_MIN_SIZE, PARTICLE_MAX_SIZE, PARTICLE_HUE_MIN, PARTICLE_HUE_MAX } from './Constants';
 
 interface Particle {
     x: number;
@@ -14,19 +15,19 @@ interface Particle {
 export class ParticleManager implements Actor {
     particles: Particle[] = [];
 
-    createExplosion(x: number, y: number, color: string = `hsl(${Math.random() * 60 + 10}, 100%, 50%)`) {
-        for (let i = 0; i < 30; i++) {
+    createExplosion(x: number, y: number, color: string = `hsl(${Math.random() * (PARTICLE_HUE_MAX - PARTICLE_HUE_MIN) + PARTICLE_HUE_MIN}, 100%, 50%)`) {
+        for (let i = 0; i < PARTICLE_COUNT_PER_EXPLOSION; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 200 + 50;
+            const speed = Math.random() * (PARTICLE_MAX_SPEED - PARTICLE_MIN_SPEED) + PARTICLE_MIN_SPEED;
             this.particles.push({
                 x: x,
                 y: y,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
-                life: Math.random() * 0.5 + 0.5,
-                maxLife: 1.0,
+                life: Math.random() * (PARTICLE_MAX_LIFE - PARTICLE_MIN_LIFE) + PARTICLE_MIN_LIFE,
+                maxLife: PARTICLE_MAX_LIFE,
                 color: color,
-                size: Math.random() * 4 + 2
+                size: Math.random() * (PARTICLE_MAX_SIZE - PARTICLE_MIN_SIZE) + PARTICLE_MIN_SIZE
             });
         }
     }

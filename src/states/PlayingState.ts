@@ -1,7 +1,7 @@
 import { GameState } from '../interfaces/GameState';
 import { Game } from '../Game';
 import { Asteroid } from '../Asteroid';
-import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION } from '../Constants';
+import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR } from '../Constants';
 
 export class PlayingState implements GameState {
     enter(game: Game): void {
@@ -59,12 +59,12 @@ export class PlayingState implements GameState {
 
             // Ship Collision
             if (game.ship.visible) {
-                const dx = asteroid.x - 75;
+                const dx = asteroid.x - SHIP_COLLISION_X;
                 const dy = asteroid.y - game.ship.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < asteroid.size + 15) {
-                    game.shakeIntensity = 20;
+                if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
+                    game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
                     game.toHitFreeze(HIT_FREEZE_DURATION);
                     return;
                 }
@@ -78,12 +78,12 @@ export class PlayingState implements GameState {
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < asteroid.size + bullet.size) {
-                    game.particleManager.createExplosion(asteroid.x, asteroid.y, '#888');
+                    game.particleManager.createExplosion(asteroid.x, asteroid.y, ASTEROID_COLOR);
                     game.asteroids.splice(i, 1);
                     game.bullets.splice(j, 1);
 
-                    game.shakeIntensity = 10;
-                    game.toAsteroidHitFreeze(0.05);
+                    game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
+                    game.toAsteroidHitFreeze(ASTEROID_HIT_FREEZE_DURATION);
                     break;
                 }
             }

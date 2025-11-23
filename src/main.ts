@@ -1,6 +1,6 @@
 
 import './style.css'
-import { GAME_WIDTH, GAME_HEIGHT } from './Constants';
+import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE } from './Constants';
 import { Game } from './Game';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#gameCanvas')!;
@@ -44,10 +44,10 @@ function gameLoop(timestamp: number) {
 }
 
 function drawPaused() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillStyle = `rgba(0, 0, 0, ${PAUSE_OVERLAY_ALPHA})`;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     ctx.fillStyle = '#fff';
-    ctx.font = '48px sans-serif';
+    ctx.font = `${PAUSE_FONT_SIZE}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('PAUSED', GAME_WIDTH / 2, GAME_HEIGHT / 2);
 }

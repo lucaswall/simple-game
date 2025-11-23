@@ -1,5 +1,5 @@
 import { Actor } from './interfaces/Actor';
-import { GAME_WIDTH, GAME_HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED } from './Constants';
+import { GAME_WIDTH, GAME_HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR } from './Constants';
 
 export class Asteroid implements Actor {
     x: number;
@@ -11,14 +11,14 @@ export class Asteroid implements Actor {
 
     constructor() {
         this.x = GAME_WIDTH;
-        this.y = Math.random() * (GAME_HEIGHT - 40) + 20;
-        this.size = Math.random() * 15 + 15;
+        this.y = Math.random() * (GAME_HEIGHT - ASTEROID_SPAWN_Y_MARGIN) + ASTEROID_SPAWN_Y_OFFSET;
+        this.size = Math.random() * (ASTEROID_MAX_SIZE - ASTEROID_MIN_SIZE) + ASTEROID_MIN_SIZE;
         this.speed = Math.random() * (ASTEROID_MAX_SPEED - ASTEROID_MIN_SPEED) + ASTEROID_MIN_SPEED;
 
-        const vertexCount = Math.floor(Math.random() * 5) + 5;
+        const vertexCount = Math.floor(Math.random() * (ASTEROID_MAX_VERTICES - ASTEROID_MIN_VERTICES)) + ASTEROID_MIN_VERTICES;
         for (let i = 0; i < vertexCount; i++) {
             const angle = (i / vertexCount) * Math.PI * 2;
-            const radius = this.size * (0.5 + Math.random() * 0.5);
+            const radius = this.size * (ASTEROID_RADIUS_MIN_FACTOR + Math.random() * (ASTEROID_RADIUS_MAX_FACTOR - ASTEROID_RADIUS_MIN_FACTOR));
             this.vertices.push({
                 x: Math.cos(angle) * radius,
                 y: Math.sin(angle) * radius
@@ -34,7 +34,7 @@ export class Asteroid implements Actor {
     }
 
     draw(ctx: CanvasRenderingContext2D): void {
-        ctx.fillStyle = '#888';
+        ctx.fillStyle = ASTEROID_COLOR;
         ctx.beginPath();
         if (this.vertices.length > 0) {
             ctx.moveTo(this.x + this.vertices[0].x, this.y + this.vertices[0].y);

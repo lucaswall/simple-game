@@ -1,7 +1,7 @@
 import { Actor } from './interfaces/Actor';
 import { Input } from './Input';
 import { Bullet } from './Bullet';
-import { GAME_HEIGHT, SHIP_SPEED, SHIP_SIZE } from './Constants';
+import { GAME_HEIGHT, SHIP_SPEED, SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE } from './Constants';
 
 export class Ship implements Actor {
     y: number = GAME_HEIGHT / 2;
@@ -31,8 +31,8 @@ export class Ship implements Actor {
         // Shooting
         if (this.input.keys.Space) {
             const now = performance.now();
-            if (now - this.lastShotTime > 250) {
-                this.bullets.push(new Bullet(100, this.y, 800, 5));
+            if (now - this.lastShotTime > SHIP_FIRE_RATE_MS) {
+                this.bullets.push(new Bullet(SHIP_X_POSITION, this.y, BULLET_SPEED, BULLET_SIZE));
                 this.lastShotTime = now;
             }
         }
@@ -43,9 +43,9 @@ export class Ship implements Actor {
 
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.moveTo(100, this.y); // Nose
-        ctx.lineTo(50, this.y - SHIP_SIZE / 2); // Top back
-        ctx.lineTo(50, this.y + SHIP_SIZE / 2); // Bottom back
+        ctx.moveTo(SHIP_X_POSITION, this.y); // Nose
+        ctx.lineTo(SHIP_BACK_X_POSITION, this.y - SHIP_SIZE / 2); // Top back
+        ctx.lineTo(SHIP_BACK_X_POSITION, this.y + SHIP_SIZE / 2); // Bottom back
         ctx.closePath();
         ctx.fill();
     }
