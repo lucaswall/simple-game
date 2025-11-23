@@ -134,6 +134,19 @@ function update(deltaTime: number) {
         if (asteroid.x + asteroid.size < 0) {
             asteroids.splice(index, 1);
         }
+
+        // Collision Detection
+        // Ship approximate center: (75, shipY)
+        // Ship approximate radius: 15 (SHIP_SIZE / 2)
+        const dx = asteroid.x - 75;
+        const dy = asteroid.y - shipY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < asteroid.size + 15) {
+            // Collision detected!
+            shipY = GAME_HEIGHT / 2;
+            // Optional: Add explosion effect or sound here later
+        }
     });
 }
 
