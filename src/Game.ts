@@ -1,5 +1,5 @@
 import { GameState } from './interfaces/GameState';
-import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY, EXPLOSION_DURATION, EXPLOSION_TIME_SCALE } from './Constants';
+import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY } from './Constants';
 
 export class Game {
     ctx: CanvasRenderingContext2D;
@@ -7,8 +7,6 @@ export class Game {
     shakeIntensity: number = 0;
     freezeTimer: number = 0;
     freezeCallback: (() => void) | null = null;
-    explosionTimer: number = 0;
-    timeScale: number = 1.0; // Global time scale for rendering/updates
 
     constructor(ctx: CanvasRenderingContext2D, initialState: GameState) {
         this.ctx = ctx;
@@ -29,35 +27,16 @@ export class Game {
         this.freezeCallback = callback;
     }
 
-    startExplosion() {
-        if (this.currentState.startExplosion) {
-            this.currentState.startExplosion();
-            this.explosionTimer = EXPLOSION_DURATION;
-            this.timeScale = EXPLOSION_TIME_SCALE;
-        }
-    }
-
-    respawn() {
-        if (this.currentState.respawn) {
-            this.currentState.respawn();
-            this.timeScale = 1.0;
-            this.explosionTimer = 0;
-        }
-    }
-
     update(deltaTime: number) {
-        // Apply time scale to deltaTime
-        const scaledDeltaTime = deltaTime * this.timeScale;
-
         // Update Shake
         if (this.shakeIntensity > 0) {
-            this.shakeIntensity -= SHAKE_DECAY * deltaTime; // Shake uses real time, not scaled
+            this.shakeIntensity -= SHAKE_DECAY * deltaTime;
             if (this.shakeIntensity < 0) this.shakeIntensity = 0;
         }
 
         // Handle freeze timer
         if (this.freezeTimer > 0) {
-            this.freezeTimer -= deltaTime; // Freeze uses real time
+            this.freezeTimer -= deltaTime;
             if (this.freezeTimer <= 0) {
                 this.freezeTimer = 0;
                 if (this.freezeCallback) {
@@ -67,25 +46,6 @@ export class Game {
                 }
             }
             // Don't update game state when frozen
-            return;
-        }
-
-        // Handle explosion timer
-        if (this.explosionTimer > 0) {
-            this.explosionTimer -= scaledDeltaTime;
-            
-            // Update environment during explosion (with time scale)
-            if (this.currentState.updateDuringExplosion) {
-                this.currentState.updateDuringExplosion(scaledDeltaTime);
-            }
-
-            // Transition to main menu when timer expires and state indicates it can respawn
-            if (this.explosionTimer <= 0 && this.currentState.canRespawn && this.currentState.canRespawn()) {
-                // Don't respawn, go back to main menu instead
-                if (this.currentState.onGameOver) {
-                    this.currentState.onGameOver(this);
-                }
-            }
             return;
         }
 
@@ -107,7 +67,6 @@ export class Game {
         }
 
         // Draw current state
-        // During explosion, ship is hidden and environment continues with time scale
         this.currentState.draw(this, this.ctx);
 
         this.ctx.restore();

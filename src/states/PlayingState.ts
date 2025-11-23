@@ -6,7 +6,7 @@ import { Bullet } from '../Bullet';
 import { Starfield } from '../Starfield';
 import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
-import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR, GAME_HEIGHT } from '../Constants';
+import { ASTEROID_SPAWN_INTERVAL, HIT_FREEZE_DURATION, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_COLOR, EXPLOSION_DURATION, EXPLOSION_TIME_SCALE } from '../Constants';
 import { MainMenuState } from './MainMenuState';
 
 export class PlayingState implements GameState {
@@ -17,6 +17,8 @@ export class PlayingState implements GameState {
     bullets: Bullet[] = [];
     particleManager: ParticleManager;
     asteroidTimer: number = 0;
+    private explosionTimer: number = 0;
+    private timeScale: number = 1.0;
 
     constructor(input: Input) {
         this.input = input;
@@ -38,6 +40,25 @@ export class PlayingState implements GameState {
             return;
         }
 
+        // Handle explosion state
+        if (this.explosionTimer > 0) {
+            const scaledDeltaTime = deltaTime * this.timeScale;
+            this.explosionTimer -= scaledDeltaTime;
+            
+            // Update environment during explosion (with time scale)
+            this.starfield.update(scaledDeltaTime);
+            this.updateBullets(scaledDeltaTime);
+            this.updateAsteroids(scaledDeltaTime);
+            this.particleManager.update(scaledDeltaTime);
+
+            // Transition to main menu when timer expires and particles are gone
+            if (this.explosionTimer <= 0 && this.particleManager.particles.length === 0) {
+                game.changeState(new MainMenuState(this.input));
+            }
+            return;
+        }
+
+        // Normal gameplay updates
         this.starfield.update(deltaTime);
         this.ship.update(deltaTime);
         this.updateBullets(deltaTime);
@@ -56,32 +77,11 @@ export class PlayingState implements GameState {
 
     exit(_game: Game): void { }
 
-    startExplosion(): void {
+    private startExplosion(): void {
         this.particleManager.createExplosion(SHIP_COLLISION_X, this.ship.y);
         this.ship.visible = false;
-    }
-
-    updateDuringExplosion(deltaTime: number): void {
-        this.starfield.update(deltaTime);
-        this.updateBullets(deltaTime);
-        this.updateAsteroids(deltaTime);
-        this.particleManager.update(deltaTime);
-    }
-
-    canRespawn(): boolean {
-        return this.particleManager.particles.length === 0;
-    }
-
-    respawn(): void {
-        this.ship.y = GAME_HEIGHT / 2;
-        this.ship.visible = true;
-        this.asteroids = [];
-        this.asteroidTimer = 0;
-    }
-
-    onGameOver(game: Game): void {
-        // Transition back to main menu
-        game.changeState(new MainMenuState(this.input));
+        this.explosionTimer = EXPLOSION_DURATION;
+        this.timeScale = EXPLOSION_TIME_SCALE;
     }
 
     private updateBullets(deltaTime: number) {
@@ -123,7 +123,7 @@ export class PlayingState implements GameState {
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
                     game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
                     game.startFreeze(HIT_FREEZE_DURATION, () => {
-                        game.startExplosion();
+                        this.startExplosion();
                     });
                     return;
                 }
