@@ -9,6 +9,12 @@ export const SHIP_BACK_X_POSITION = 50; // Back x position
 export const SHIP_FIRE_RATE_MS = 250; // Milliseconds between shots
 export const SHIP_COLLISION_X = 75; // X position for collision detection
 export const SHIP_COLLISION_RADIUS = 15; // Collision radius
+export const SHIP_INTRO_CONSTANT_SPEED = 500; // Pixels per second for constant speed entry
+export const SHIP_INTRO_DECELERATE_DURATION = 0.5; // Seconds to decelerate linearly to stop at overshoot
+export const SHIP_INTRO_START_RETURN_EASE_DURATION = 0.5; // Seconds to ease-in when starting to return (slower)
+export const SHIP_INTRO_STOP_FINAL_EASE_DURATION = 0.7; // Seconds to ease-out when stopping at final position (slower)
+export const SHIP_INTRO_OVERSHOOT = 200; // Pixels to overshoot beyond normal position
+export const SHIP_INTRO_START_X = -100; // Starting x position (off-screen left)
 
 // Bullet constants
 export const BULLET_SPEED = 800; // Pixels per second
