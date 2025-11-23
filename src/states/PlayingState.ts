@@ -18,7 +18,6 @@ export class PlayingState implements GameState {
     particleManager: ParticleManager;
     asteroidTimer: number = 0;
     private explosionTimer: number = 0;
-    private timeScale: number = 1.0;
 
     constructor(input: Input) {
         this.input = input;
@@ -35,30 +34,27 @@ export class PlayingState implements GameState {
     }
 
     update(game: Game, deltaTime: number): void {
-        // Skip updates if frozen (Game.update handles freeze timer)
-        if (game.freezeTimer > 0) {
-            return;
-        }
-
         // Handle explosion state
         if (this.explosionTimer > 0) {
-            const scaledDeltaTime = deltaTime * this.timeScale;
-            this.explosionTimer -= scaledDeltaTime;
-            
-            // Update environment during explosion (with time scale)
-            this.starfield.update(scaledDeltaTime);
-            this.updateBullets(scaledDeltaTime);
-            this.updateAsteroids(scaledDeltaTime);
-            this.particleManager.update(scaledDeltaTime);
+            // `deltaTime` is already scaled by Game.timeScale (slow motion during explosion).
+            this.explosionTimer -= deltaTime;
+
+            // Update environment during explosion (with scaled time)
+            this.starfield.update(deltaTime);
+            this.updateBullets(deltaTime);
+            this.updateAsteroids(deltaTime);
+            this.particleManager.update(deltaTime);
 
             // Transition to main menu when timer expires and particles are gone
             if (this.explosionTimer <= 0 && this.particleManager.particles.length === 0) {
+                // Restore normal time before leaving the state.
+                game.setTimeScale(1);
                 game.changeState(new MainMenuState(this.input));
             }
             return;
         }
 
-        // Normal gameplay updates
+        // Normal gameplay updates (time may be slowed/frozen via Game.timeScale)
         this.starfield.update(deltaTime);
         this.ship.update(deltaTime);
         this.updateBullets(deltaTime);
@@ -77,11 +73,13 @@ export class PlayingState implements GameState {
 
     exit(_game: Game): void { }
 
-    private startExplosion(): void {
+    private startExplosion(game: Game): void {
         this.particleManager.createExplosion(SHIP_COLLISION_X, this.ship.y);
         this.ship.visible = false;
         this.explosionTimer = EXPLOSION_DURATION;
-        this.timeScale = EXPLOSION_TIME_SCALE;
+
+        // Enter global slow motion for the duration of the explosion sequence.
+        game.setTimeScale(EXPLOSION_TIME_SCALE);
     }
 
     private updateBullets(deltaTime: number) {
@@ -123,7 +121,7 @@ export class PlayingState implements GameState {
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
                     game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
                     game.startFreeze(HIT_FREEZE_DURATION, () => {
-                        this.startExplosion();
+                        this.startExplosion(game);
                     });
                     return;
                 }

@@ -5,8 +5,13 @@ export class Game {
     ctx: CanvasRenderingContext2D;
     currentState: GameState;
     shakeIntensity: number = 0;
-    freezeTimer: number = 0;
-    freezeCallback: (() => void) | null = null;
+
+    // Global time scale applied to all game updates (1 = normal speed).
+    timeScale: number = 1;
+
+    // Optional timed time-scale effect (e.g., hit-stop/freeze).
+    private timeScaleTimer: number = 0;
+    private timeScaleCallback: (() => void) | null = null;
 
     constructor(ctx: CanvasRenderingContext2D, initialState: GameState) {
         this.ctx = ctx;
@@ -22,9 +27,28 @@ export class Game {
         this.currentState.enter(this);
     }
 
-    startFreeze(duration: number, callback: () => void) {
-        this.freezeTimer = duration;
-        this.freezeCallback = callback;
+    /**
+     * Set the global time scale immediately (1 = normal speed, 0 = frozen).
+     */
+    setTimeScale(scale: number) {
+        this.timeScale = scale;
+    }
+
+    /**
+     * Apply a time scale for a fixed duration, then restore to normal and run an optional callback.
+     * Used to implement hit-stop style freezes.
+     */
+    private setTimedTimeScale(scale: number, duration: number, callback?: () => void) {
+        this.timeScale = scale;
+        this.timeScaleTimer = duration;
+        this.timeScaleCallback = callback ?? null;
+    }
+
+    /**
+     * Hit-stop style freeze: timeScale = 0 for `duration`, then optional callback.
+     */
+    startFreeze(duration: number, callback?: () => void) {
+        this.setTimedTimeScale(0, duration, callback);
     }
 
     update(deltaTime: number) {
@@ -34,22 +58,25 @@ export class Game {
             if (this.shakeIntensity < 0) this.shakeIntensity = 0;
         }
 
-        // Handle freeze timer
-        if (this.freezeTimer > 0) {
-            this.freezeTimer -= deltaTime;
-            if (this.freezeTimer <= 0) {
-                this.freezeTimer = 0;
-                if (this.freezeCallback) {
-                    const callback = this.freezeCallback;
-                    this.freezeCallback = null;
+        // Handle any active timed time-scale effect (e.g., hit-stop).
+        if (this.timeScaleTimer > 0) {
+            this.timeScaleTimer -= deltaTime;
+            if (this.timeScaleTimer <= 0) {
+                this.timeScaleTimer = 0;
+
+                // Restore normal time scale before invoking callback.
+                this.timeScale = 1;
+
+                if (this.timeScaleCallback) {
+                    const callback = this.timeScaleCallback;
+                    this.timeScaleCallback = null;
                     callback();
                 }
             }
-            // Don't update game state when frozen
-            return;
         }
 
-        this.currentState.update(this, deltaTime);
+        const scaledDeltaTime = deltaTime * this.timeScale;
+        this.currentState.update(this, scaledDeltaTime);
     }
 
     draw() {
