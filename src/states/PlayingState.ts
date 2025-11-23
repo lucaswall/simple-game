@@ -71,7 +71,7 @@ export class PlayingState implements GameState {
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
                     game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
                     game.startFreeze(HIT_FREEZE_DURATION, () => {
-                        game.toExploding();
+                        game.startExplosion();
                     });
                     return;
                 }
