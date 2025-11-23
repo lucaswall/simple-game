@@ -9,6 +9,11 @@ export class PlayingState implements GameState {
     }
 
     update(game: Game, deltaTime: number): void {
+        // Skip updates if frozen (Game.update handles freeze timer)
+        if (game.freezeTimer > 0) {
+            return;
+        }
+
         game.starfield.update(deltaTime);
         game.ship.update(deltaTime);
         this.updateBullets(game, deltaTime);
@@ -65,7 +70,9 @@ export class PlayingState implements GameState {
 
                 if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
                     game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
-                    game.toHitFreeze(HIT_FREEZE_DURATION);
+                    game.startFreeze(HIT_FREEZE_DURATION, () => {
+                        game.toExploding();
+                    });
                     return;
                 }
             }
@@ -83,7 +90,9 @@ export class PlayingState implements GameState {
                     game.bullets.splice(j, 1);
 
                     game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
-                    game.toAsteroidHitFreeze(ASTEROID_HIT_FREEZE_DURATION);
+                    game.startFreeze(ASTEROID_HIT_FREEZE_DURATION, () => {
+                        // Stay in playing state, freeze just provides visual feedback
+                    });
                     break;
                 }
             }

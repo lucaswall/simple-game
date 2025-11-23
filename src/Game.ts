@@ -7,9 +7,7 @@ import { Bullet } from './Bullet';
 import { ParticleManager } from './ParticleManager';
 import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY } from './Constants';
 import { PlayingState } from './states/PlayingState';
-import { HitFreezeState } from './states/HitFreezeState';
 import { ExplodingState } from './states/ExplodingState';
-import { AsteroidHitFreezeState } from './states/AsteroidHitFreezeState';
 
 export class Game {
     ctx: CanvasRenderingContext2D;
@@ -23,6 +21,8 @@ export class Game {
     currentState: GameState;
     shakeIntensity: number = 0;
     asteroidTimer: number = 0;
+    freezeTimer: number = 0;
+    freezeCallback: (() => void) | null = null;
 
     constructor(ctx: CanvasRenderingContext2D) {
         this.ctx = ctx;
@@ -49,20 +49,13 @@ export class Game {
         this.changeState(new PlayingState());
     }
 
-    toHitFreeze(duration: number) {
-        // We need to import HitFreezeState. 
-        // But we can't do it at top level if we want to avoid cycles?
-        // Actually, Game -> States is fine. States -> Game (type) is fine.
-        // The problem was States -> States.
-        this.changeState(new HitFreezeState(duration));
+    startFreeze(duration: number, callback: () => void) {
+        this.freezeTimer = duration;
+        this.freezeCallback = callback;
     }
 
     toExploding() {
         this.changeState(new ExplodingState());
-    }
-
-    toAsteroidHitFreeze(duration: number) {
-        this.changeState(new AsteroidHitFreezeState(duration));
     }
 
     update(deltaTime: number) {
@@ -70,6 +63,21 @@ export class Game {
         if (this.shakeIntensity > 0) {
             this.shakeIntensity -= SHAKE_DECAY * deltaTime;
             if (this.shakeIntensity < 0) this.shakeIntensity = 0;
+        }
+
+        // Handle freeze timer
+        if (this.freezeTimer > 0) {
+            this.freezeTimer -= deltaTime;
+            if (this.freezeTimer <= 0) {
+                this.freezeTimer = 0;
+                if (this.freezeCallback) {
+                    const callback = this.freezeCallback;
+                    this.freezeCallback = null;
+                    callback();
+                }
+            }
+            // Don't update game state when frozen
+            return;
         }
 
         this.currentState.update(this, deltaTime);
@@ -89,6 +97,7 @@ export class Game {
             this.ctx.translate(dx, dy);
         }
 
+        // Draw current state (will draw frozen frame if freezeTimer > 0)
         this.currentState.draw(this, this.ctx);
 
         this.ctx.restore();
