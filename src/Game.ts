@@ -1,11 +1,8 @@
 import { GameState } from './interfaces/GameState';
-import { Input } from './Input';
 import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY, EXPLOSION_DURATION, EXPLOSION_TIME_SCALE } from './Constants';
-import { PlayingState } from './states/PlayingState';
 
 export class Game {
     ctx: CanvasRenderingContext2D;
-    input: Input;
     currentState: GameState;
     shakeIntensity: number = 0;
     freezeTimer: number = 0;
@@ -13,12 +10,9 @@ export class Game {
     explosionTimer: number = 0;
     timeScale: number = 1.0; // Global time scale for rendering/updates
 
-    constructor(ctx: CanvasRenderingContext2D) {
+    constructor(ctx: CanvasRenderingContext2D, initialState: GameState) {
         this.ctx = ctx;
-        this.input = new Input();
-
-        // Initial State
-        this.currentState = new PlayingState(this.input);
+        this.currentState = initialState;
         this.currentState.enter(this);
     }
 
@@ -28,10 +22,6 @@ export class Game {
         }
         this.currentState = newState;
         this.currentState.enter(this);
-    }
-
-    toPlaying() {
-        this.changeState(new PlayingState(this.input));
     }
 
     startFreeze(duration: number, callback: () => void) {
@@ -92,7 +82,7 @@ export class Game {
             // Respawn when timer expires and state indicates it can respawn
             if (this.explosionTimer <= 0 && this.currentState.canRespawn && this.currentState.canRespawn()) {
                 this.respawn();
-                this.toPlaying();
+                // State remains the same after respawn (e.g., PlayingState stays as PlayingState)
             }
             return;
         }
