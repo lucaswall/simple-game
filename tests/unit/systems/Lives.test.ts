@@ -199,15 +199,17 @@ describe('Lives System', () => {
         // Complete explosion and respawn
         playingState.explosionTimer = 0;
         playingState.particleManager.particles = [];
-        // Reset game time to expected value after update (update doesn't advance time during explosion)
+        // Reset game time to expected value (update doesn't advance time during explosion)
         playingState['gameTime'] = 140.0;
+        // Update will respawn ship, but gameTime won't advance because explosionTimer was 0
         playingState.update(mockGame as any, 0.1);
+        // After respawn, gameTime might advance slightly, so reset it
+        playingState['gameTime'] = 140.0;
         
         // Second death
         playingState['startExplosion'](mockGame as any);
         expect(playingState.lives).toBe(1);
-        // Account for any small time advancement during update
-        expect(playingState['gameTime']).toBeCloseTo(80.0, 1); // 140 - 60 = 80
+        expect(playingState['gameTime']).toBe(80.0); // 140 - 60 = 80
     });
 
     it('should handle edge case when game time is exactly 0', () => {
