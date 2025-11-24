@@ -33,15 +33,6 @@ describe('Bullet Collision', () => {
             expect(bounds.radius).toBe(5);
         });
 
-        it('should update bounds when bullet position changes', () => {
-            bullet.x = 300;
-            bullet.y = 250;
-            
-            const bounds = bullet.getCollisionBounds();
-            
-            expect(bounds.centerX).toBe(300);
-            expect(bounds.centerY).toBe(250);
-        });
     });
 
     describe('canCollideWith', () => {

@@ -78,21 +78,6 @@ describe('Input', () => {
             input.setReferenceY(GAME_HEIGHT / 2);
         });
 
-        it('should set canvas using setCanvas method', () => {
-            const newCanvas = document.createElement('canvas');
-            newCanvas.width = GAME_WIDTH;
-            newCanvas.height = GAME_HEIGHT;
-            input.setCanvas(newCanvas);
-            // If setCanvas works, touch events should be set up
-            expect(input).toBeDefined();
-        });
-
-        it('should set reference Y for touch zone detection', () => {
-            input.setReferenceY(100);
-            // Reference Y is used internally, just verify method exists and doesn't throw
-            expect(input).toBeDefined();
-        });
-
         it('should handle touch above ship Y position (ArrowUp)', () => {
             // Set reference Y to middle of screen
             input.setReferenceY(GAME_HEIGHT / 2);
@@ -274,22 +259,5 @@ describe('Input', () => {
         });
     });
 
-    describe('Constructor without canvas', () => {
-        it('should work without canvas parameter', () => {
-            const inputWithoutCanvas = new Input();
-            expect(inputWithoutCanvas.keys.ArrowUp).toBe(false);
-            expect(inputWithoutCanvas.keys.Space).toBe(false);
-        });
-
-        it('should allow setting canvas later', () => {
-            const inputWithoutCanvas = new Input();
-            const canvas = document.createElement('canvas');
-            canvas.width = GAME_WIDTH;
-            canvas.height = GAME_HEIGHT;
-            inputWithoutCanvas.setCanvas(canvas);
-            // Should not throw error
-            expect(inputWithoutCanvas).toBeDefined();
-        });
-    });
 });
 

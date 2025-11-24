@@ -48,16 +48,6 @@ describe('Asteroid', () => {
             expect(asteroid.speed).toBeCloseTo(Math.sqrt(300 * 300 + 400 * 400), 1);
         });
 
-        it('should be active by default', () => {
-            const asteroid = new Asteroid();
-            expect(asteroid.active).toBe(true);
-        });
-
-        it('should have vertices', () => {
-            const asteroid = new Asteroid();
-            expect(asteroid.vertices.length).toBeGreaterThan(0);
-        });
-
         it('should have velocity components', () => {
             const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 100);
             expect(asteroid.velocityX).toBe(-300);

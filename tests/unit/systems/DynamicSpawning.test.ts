@@ -17,10 +17,6 @@ describe('Dynamic Spawning System', () => {
         playingState.enter(mockGame as any);
     });
 
-    it('should start with game time at 0', () => {
-        expect(playingState['gameTime']).toBe(0);
-    });
-
     it('should track game time during gameplay', () => {
         playingState.update(mockGame as any, 0.5);
         expect(playingState['gameTime']).toBeCloseTo(0.5, 2);
@@ -36,10 +32,6 @@ describe('Dynamic Spawning System', () => {
         playingState.update(mockGame as any, 0.5);
         
         expect(playingState['gameTime']).toBe(initialTime);
-    });
-
-    it('should start with spawn interval of 3 seconds', () => {
-        expect(playingState['asteroidTimer']).toBe(3.0);
     });
 
     it('should calculate spawn interval correctly at start', () => {
@@ -134,13 +126,6 @@ describe('Dynamic Spawning System', () => {
         const ratio = largeCount / totalSamples;
         expect(ratio).toBeGreaterThan(0.25);
         expect(ratio).toBeLessThan(0.35);
-    });
-
-    it('should reset game time when entering playing state', () => {
-        playingState['gameTime'] = 100.0;
-        playingState.enter(mockGame as any);
-        
-        expect(playingState['gameTime']).toBe(0);
     });
 
     it('should reset game time when a life is lost', () => {

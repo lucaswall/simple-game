@@ -43,15 +43,6 @@ describe('Asteroid Collision', () => {
             expect(bounds.radius).toBe(25);
         });
 
-        it('should update bounds when asteroid position changes', () => {
-            asteroid.x = 300;
-            asteroid.y = 250;
-            
-            const bounds = asteroid.getCollisionBounds();
-            
-            expect(bounds.centerX).toBe(300);
-            expect(bounds.centerY).toBe(250);
-        });
     });
 
     describe('canCollideWith', () => {

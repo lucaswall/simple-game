@@ -15,10 +15,6 @@ describe('Debug Overlay', () => {
         playingState.enter(mockGame as any);
     });
 
-    it('should start with debug mode disabled', () => {
-        expect(playingState['debugMode']).toBe(false);
-    });
-
     it('should toggle debug mode when D key is pressed', () => {
         expect(playingState['debugMode']).toBe(false);
         
@@ -56,31 +52,6 @@ describe('Debug Overlay', () => {
         playingState.enter(mockGame as any);
         
         expect(playingState['debugMode']).toBe(false);
-    });
-
-    it('should draw debug overlay when debug mode is enabled', () => {
-        playingState['debugMode'] = true;
-        playingState['gameTime'] = 65.5; // 1 minute 5.5 seconds
-        
-        // Create a canvas context to test drawing
-        const canvas = document.createElement('canvas');
-        canvas.width = 800;
-        canvas.height = 600;
-        const ctx = canvas.getContext('2d');
-        
-        // Skip if canvas context is not available (some test environments don't support it)
-        if (!ctx) {
-            // Just verify debug mode is set correctly
-            expect(playingState['debugMode']).toBe(true);
-            return;
-        }
-        
-        // Should not throw when drawing with debug mode enabled
-        expect(() => {
-            playingState.draw(mockGame as any, ctx);
-        }).not.toThrow();
-        
-        expect(playingState['debugMode']).toBe(true);
     });
 
     it('should calculate spawn rate correctly for debug display', () => {

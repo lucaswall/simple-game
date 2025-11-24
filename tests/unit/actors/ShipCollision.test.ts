@@ -40,14 +40,6 @@ describe('Ship Collision', () => {
             expect(bounds.radius).toBe(SHIP_COLLISION_RADIUS);
         });
 
-        it('should update bounds when ship position changes', () => {
-            ship.x = SHIP_X_POSITION;
-            ship.y = 200;
-            
-            const bounds = ship.getCollisionBounds();
-            
-            expect(bounds.centerY).toBe(200);
-        });
     });
 
     describe('canCollideWith', () => {

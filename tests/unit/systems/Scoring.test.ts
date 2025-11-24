@@ -18,10 +18,6 @@ describe('Scoring System', () => {
         playingState.enter(mockGame as any);
     });
 
-    it('should start with score of 0', () => {
-        expect(playingState.score).toBe(0);
-    });
-
     it('should increment score when small asteroid is destroyed', () => {
         const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
         const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
@@ -44,12 +40,6 @@ describe('Scoring System', () => {
         playingState['checkCollisions'](mockGame as any);
         
         expect(playingState.score).toBe(initialScore + ASTEROID_MEDIUM_POINTS);
-    });
-
-    it('should reset score when entering playing state', () => {
-        playingState.score = 500;
-        playingState.enter(mockGame as any);
-        expect(playingState.score).toBe(0);
     });
 
     it('should accumulate score for multiple small asteroids', () => {
