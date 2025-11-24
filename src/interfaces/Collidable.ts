@@ -19,6 +19,7 @@ export interface CollisionContext {
     game: Game;
     particleManager: ParticleManager;
     onAsteroidDestroyed?: (asteroid: Actor) => void;
+    onAsteroidSplit?: (parentAsteroid: Actor, newAsteroids: Actor[]) => void;
     onShipDestroyed?: () => void;
 }
 

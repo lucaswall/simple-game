@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayingState } from '../../../src/states/PlayingState';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { Asteroid } from '../../../src/actors/Asteroid';
+import { Asteroid, AsteroidSize } from '../../../src/actors/Asteroid';
 import { Bullet } from '../../../src/actors/Bullet';
-import { ASTEROID_POINTS } from '../../../src/states/PlayingState';
+import { ASTEROID_SMALL_POINTS, ASTEROID_MEDIUM_POINTS, ASTEROID_LARGE_POINTS } from '../../../src/states/PlayingState';
 
 describe('Scoring System', () => {
     let playingState: PlayingState;
@@ -22,8 +22,8 @@ describe('Scoring System', () => {
         expect(playingState.score).toBe(0);
     });
 
-    it('should increment score when asteroid is destroyed', () => {
-        const asteroid = new Asteroid();
+    it('should increment score when small asteroid is destroyed', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
         const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
         playingState.asteroids.push(asteroid);
         playingState.bullets.push(bullet);
@@ -31,7 +31,19 @@ describe('Scoring System', () => {
         const initialScore = playingState.score;
         playingState['checkCollisions'](mockGame as any);
         
-        expect(playingState.score).toBe(initialScore + ASTEROID_POINTS);
+        expect(playingState.score).toBe(initialScore + ASTEROID_SMALL_POINTS);
+    });
+
+    it('should increment score when medium asteroid is split', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.MEDIUM, -300, 0);
+        const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
+        playingState.asteroids.push(asteroid);
+        playingState.bullets.push(bullet);
+        
+        const initialScore = playingState.score;
+        playingState['checkCollisions'](mockGame as any);
+        
+        expect(playingState.score).toBe(initialScore + ASTEROID_MEDIUM_POINTS);
     });
 
     it('should reset score when entering playing state', () => {
@@ -40,9 +52,9 @@ describe('Scoring System', () => {
         expect(playingState.score).toBe(0);
     });
 
-    it('should accumulate score for multiple asteroids', () => {
-        const asteroid1 = new Asteroid();
-        const asteroid2 = new Asteroid();
+    it('should accumulate score for multiple small asteroids', () => {
+        const asteroid1 = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
+        const asteroid2 = new Asteroid(300, 300, AsteroidSize.SMALL, -300, 0);
         const bullet1 = new Bullet(asteroid1.x, asteroid1.y, 800, 5);
         const bullet2 = new Bullet(asteroid2.x, asteroid2.y, 800, 5);
         
@@ -51,7 +63,47 @@ describe('Scoring System', () => {
         
         playingState['checkCollisions'](mockGame as any);
         
-        expect(playingState.score).toBe(ASTEROID_POINTS * 2);
+        expect(playingState.score).toBe(ASTEROID_SMALL_POINTS * 2);
+    });
+
+    it('should increment score when large asteroid is split', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.LARGE, -300, 0);
+        const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
+        playingState.asteroids.push(asteroid);
+        playingState.bullets.push(bullet);
+        
+        const initialScore = playingState.score;
+        playingState['checkCollisions'](mockGame as any);
+        
+        expect(playingState.score).toBe(initialScore + ASTEROID_LARGE_POINTS);
+    });
+
+    it('should create two medium asteroids when large asteroid is split', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.LARGE, -300, 0);
+        const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
+        playingState.asteroids.push(asteroid);
+        playingState.bullets.push(bullet);
+        
+        const initialAsteroidCount = playingState.asteroids.length;
+        playingState['checkCollisions'](mockGame as any);
+        
+        // Large asteroid should be removed, 2 medium asteroids should be added
+        expect(playingState.asteroids.length).toBe(initialAsteroidCount + 1); // -1 + 2 = +1
+        expect(playingState.asteroids.every(a => a.asteroidSize === AsteroidSize.MEDIUM)).toBe(true);
+    });
+
+    it('should create two small asteroids when medium asteroid is split', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.MEDIUM, -300, 0);
+        const bullet = new Bullet(asteroid.x, asteroid.y, 800, 5);
+        playingState.asteroids.push(asteroid);
+        playingState.bullets.push(bullet);
+        
+        const initialAsteroidCount = playingState.asteroids.length;
+        playingState['checkCollisions'](mockGame as any);
+        
+        // Medium asteroid should be removed, 2 small asteroids should be added
+        expect(playingState.asteroids.length).toBe(initialAsteroidCount + 1); // -1 + 2 = +1
+        expect(playingState.asteroids.every(a => a.asteroidSize === AsteroidSize.SMALL)).toBe(true);
     });
 });
 

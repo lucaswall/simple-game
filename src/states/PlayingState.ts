@@ -1,6 +1,6 @@
 import { GameState } from '../interfaces/GameState';
 import { Game } from '../core/Game';
-import { Asteroid } from '../actors/Asteroid';
+import { Asteroid, AsteroidSize } from '../actors/Asteroid';
 import { Ship } from '../actors/Ship';
 import { Bullet } from '../actors/Bullet';
 import { Starfield } from '../core/Starfield';
@@ -29,11 +29,18 @@ export const ASTEROID_SPAWN_Y_MARGIN = 40; // Margin from top/bottom
 export const ASTEROID_SPAWN_Y_OFFSET = 20; // Minimum y offset from top
 export const ASTEROID_MIN_SIZE = 15;
 export const ASTEROID_MAX_SIZE = 30;
+export const ASTEROID_LARGE_SIZE = 35; // Size for large asteroids
+export const ASTEROID_MEDIUM_SIZE = 25; // Size for medium asteroids
+export const ASTEROID_SMALL_SIZE = 15; // Size for small asteroids
 export const ASTEROID_MIN_VERTICES = 5;
 export const ASTEROID_MAX_VERTICES = 10;
 export const ASTEROID_RADIUS_MIN_FACTOR = 0.5; // Minimum radius factor
 export const ASTEROID_RADIUS_MAX_FACTOR = 1.0; // Maximum radius factor
 export const ASTEROID_COLOR = '#888';
+export const ASTEROID_LARGE_SPLIT_ANGLE_MIN = 5; // Minimum split angle for large->medium in degrees
+export const ASTEROID_LARGE_SPLIT_ANGLE_MAX = 10; // Maximum split angle for large->medium in degrees
+export const ASTEROID_MEDIUM_SPLIT_ANGLE_MIN = 10; // Minimum split angle for medium->small in degrees
+export const ASTEROID_MEDIUM_SPLIT_ANGLE_MAX = 30; // Maximum split angle for medium->small in degrees
 
 // Particle constants (used only in gameplay)
 export const PARTICLE_COUNT_PER_EXPLOSION = 30;
@@ -55,7 +62,9 @@ export const BULLET_SPEED = 800; // Pixels per second
 export const BULLET_SIZE = 5; // Radius
 
 // Score constants
-export const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
+export const ASTEROID_SMALL_POINTS = 50; // Points awarded for destroying a small asteroid
+export const ASTEROID_MEDIUM_POINTS = 100; // Points awarded for splitting a medium asteroid
+export const ASTEROID_LARGE_POINTS = 200; // Points awarded for splitting a large asteroid
 
 // Lives constants
 export const STARTING_LIVES = 3;
@@ -179,13 +188,32 @@ export class PlayingState implements GameState {
             game: game,
             particleManager: this.particleManager,
             onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
-                // Award points for destroying asteroid
-                this.score += ASTEROID_POINTS;
+                // Award points for destroying small asteroid
+                const ast = asteroid as Asteroid;
+                if (ast.asteroidSize === AsteroidSize.SMALL) {
+                    this.score += ASTEROID_SMALL_POINTS;
+                }
                 // Remove asteroid from array
-                const index = this.asteroids.indexOf(asteroid as Asteroid);
+                const index = this.asteroids.indexOf(ast);
                 if (index !== -1) {
                     this.asteroids.splice(index, 1);
                 }
+            },
+            onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
+                // Award points for splitting asteroid
+                const parent = parentAsteroid as Asteroid;
+                if (parent.asteroidSize === AsteroidSize.LARGE) {
+                    this.score += ASTEROID_LARGE_POINTS;
+                } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
+                    this.score += ASTEROID_MEDIUM_POINTS;
+                }
+                // Remove parent asteroid from array
+                const index = this.asteroids.indexOf(parent);
+                if (index !== -1) {
+                    this.asteroids.splice(index, 1);
+                }
+                // Add new asteroids to array
+                this.asteroids.push(...(newAsteroids as Asteroid[]));
             },
             onShipDestroyed: () => {
                 this.startExplosion(game);

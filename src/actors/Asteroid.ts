@@ -2,22 +2,63 @@ import { Collidable, CollisionBounds, CollisionContext } from '../interfaces/Col
 import { GAME_WIDTH } from '../core/Constants';
 import { Bullet } from './Bullet';
 import { Ship } from './Ship';
-import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION } from '../states/PlayingState';
+import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_LARGE_SIZE, ASTEROID_MEDIUM_SIZE, ASTEROID_SMALL_SIZE, ASTEROID_LARGE_SPLIT_ANGLE_MIN, ASTEROID_LARGE_SPLIT_ANGLE_MAX, ASTEROID_MEDIUM_SPLIT_ANGLE_MIN, ASTEROID_MEDIUM_SPLIT_ANGLE_MAX } from '../states/PlayingState';
+
+export enum AsteroidSize {
+    SMALL = 'small',
+    MEDIUM = 'medium',
+    LARGE = 'large'
+}
 
 export class Asteroid implements Collidable {
     x: number;
     y: number;
     size: number;
     speed: number;
+    velocityX: number; // Horizontal velocity component
+    velocityY: number; // Vertical velocity component
+    asteroidSize: AsteroidSize;
     vertices: { x: number; y: number }[] = [];
     active: boolean = true;
     collisionEnabled: boolean = true;
 
-    constructor() {
-        this.x = GAME_WIDTH;
-        this.y = Math.random() * (PLAY_AREA_HEIGHT - ASTEROID_SPAWN_Y_MARGIN) + ASTEROID_SPAWN_Y_OFFSET;
-        this.size = Math.random() * (ASTEROID_MAX_SIZE - ASTEROID_MIN_SIZE) + ASTEROID_MIN_SIZE;
-        this.speed = Math.random() * (ASTEROID_MAX_SPEED - ASTEROID_MIN_SPEED) + ASTEROID_MIN_SPEED;
+    constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number) {
+        // Default constructor creates a random size asteroid at spawn position
+        if (x === undefined || y === undefined || sizeType === undefined) {
+            this.x = GAME_WIDTH;
+            this.y = Math.random() * (PLAY_AREA_HEIGHT - ASTEROID_SPAWN_Y_MARGIN) + ASTEROID_SPAWN_Y_OFFSET;
+            // Randomly choose between small, medium, and large
+            // Spawn ratio: 40% small, 50% medium, 10% large
+            const rand = Math.random();
+            if (rand < 0.4) {
+                this.asteroidSize = AsteroidSize.SMALL;
+                this.size = ASTEROID_SMALL_SIZE;
+            } else if (rand < 0.9) {
+                this.asteroidSize = AsteroidSize.MEDIUM;
+                this.size = ASTEROID_MEDIUM_SIZE;
+            } else {
+                this.asteroidSize = AsteroidSize.LARGE;
+                this.size = ASTEROID_LARGE_SIZE;
+            }
+            this.speed = Math.random() * (ASTEROID_MAX_SPEED - ASTEROID_MIN_SPEED) + ASTEROID_MIN_SPEED;
+            this.velocityX = -this.speed; // Moving left
+            this.velocityY = 0;
+        } else {
+            // Constructor for split asteroids
+            this.x = x;
+            this.y = y;
+            this.asteroidSize = sizeType;
+            if (sizeType === AsteroidSize.LARGE) {
+                this.size = ASTEROID_LARGE_SIZE;
+            } else if (sizeType === AsteroidSize.MEDIUM) {
+                this.size = ASTEROID_MEDIUM_SIZE;
+            } else {
+                this.size = ASTEROID_SMALL_SIZE;
+            }
+            this.velocityX = velocityX || 0;
+            this.velocityY = velocityY || 0;
+            this.speed = Math.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY);
+        }
 
         const vertexCount = Math.floor(Math.random() * (ASTEROID_MAX_VERTICES - ASTEROID_MIN_VERTICES)) + ASTEROID_MIN_VERTICES;
         for (let i = 0; i < vertexCount; i++) {
@@ -31,8 +72,12 @@ export class Asteroid implements Collidable {
     }
 
     update(deltaTime: number): void {
-        this.x -= this.speed * deltaTime;
-        if (this.x + this.size < 0) {
+        this.x += this.velocityX * deltaTime;
+        this.y += this.velocityY * deltaTime;
+        
+        // Check if asteroid is off screen
+        if (this.x + this.size < 0 || this.x - this.size > GAME_WIDTH ||
+            this.y + this.size < 0 || this.y - this.size > PLAY_AREA_HEIGHT) {
             this.active = false;
         }
     }
@@ -67,19 +112,46 @@ export class Asteroid implements Collidable {
 
     onCollision(other: Collidable, context: CollisionContext): void {
         if (other instanceof Bullet) {
-            // Mark asteroid as inactive
-            this.active = false;
-            this.collisionEnabled = false;
+            // Mark bullet as inactive (it will be removed by its own logic)
+            (other as Bullet).active = false;
             
             // Create explosion effect
             context.particleManager.createExplosion(this.x, this.y, ASTEROID_COLOR);
             
-            // Mark bullet as inactive (it will be removed by its own logic)
-            (other as Bullet).active = false;
-            
-            // Notify context about asteroid destruction
-            if (context.onAsteroidDestroyed) {
-                context.onAsteroidDestroyed(this);
+            // Handle splitting or destruction based on size
+            if (this.asteroidSize === AsteroidSize.LARGE) {
+                // Large asteroid splits into 2 medium asteroids
+                const splitAsteroids = this.createSplitAsteroids(AsteroidSize.MEDIUM, ASTEROID_LARGE_SPLIT_ANGLE_MIN, ASTEROID_LARGE_SPLIT_ANGLE_MAX);
+                
+                // Mark this asteroid as inactive
+                this.active = false;
+                this.collisionEnabled = false;
+                
+                // Notify context about asteroid split
+                if (context.onAsteroidSplit) {
+                    context.onAsteroidSplit(this, splitAsteroids);
+                }
+            } else if (this.asteroidSize === AsteroidSize.MEDIUM) {
+                // Medium asteroid splits into 2 small asteroids
+                const splitAsteroids = this.createSplitAsteroids(AsteroidSize.SMALL, ASTEROID_MEDIUM_SPLIT_ANGLE_MIN, ASTEROID_MEDIUM_SPLIT_ANGLE_MAX);
+                
+                // Mark this asteroid as inactive
+                this.active = false;
+                this.collisionEnabled = false;
+                
+                // Notify context about asteroid split
+                if (context.onAsteroidSplit) {
+                    context.onAsteroidSplit(this, splitAsteroids);
+                }
+            } else {
+                // Small asteroid - just destroy it
+                this.active = false;
+                this.collisionEnabled = false;
+                
+                // Notify context about asteroid destruction
+                if (context.onAsteroidDestroyed) {
+                    context.onAsteroidDestroyed(this);
+                }
             }
             
             // Apply screen shake and freeze
@@ -89,6 +161,28 @@ export class Asteroid implements Collidable {
             });
         }
         // Ship collision is handled by Ship.onCollision
+    }
+
+    private createSplitAsteroids(targetSize: AsteroidSize, angleMin: number, angleMax: number): Asteroid[] {
+        // Calculate the angle of the current velocity
+        const currentAngle = Math.atan2(this.velocityY, this.velocityX);
+        
+        // Generate random split angles
+        const angle1 = currentAngle + (Math.random() * (angleMax - angleMin) + angleMin) * (Math.PI / 180);
+        const angle2 = currentAngle - (Math.random() * (angleMax - angleMin) + angleMin) * (Math.PI / 180);
+        
+        // Calculate new velocities (maintain similar speed)
+        const newSpeed = this.speed * 0.8; // Slightly slower for smaller asteroids
+        const velocityX1 = Math.cos(angle1) * newSpeed;
+        const velocityY1 = Math.sin(angle1) * newSpeed;
+        const velocityX2 = Math.cos(angle2) * newSpeed;
+        const velocityY2 = Math.sin(angle2) * newSpeed;
+        
+        // Create two asteroids of the target size
+        const asteroid1 = new Asteroid(this.x, this.y, targetSize, velocityX1, velocityY1);
+        const asteroid2 = new Asteroid(this.x, this.y, targetSize, velocityX2, velocityY2);
+        
+        return [asteroid1, asteroid2];
     }
 }
 
