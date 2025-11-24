@@ -8,6 +8,7 @@ export class Input {
 
     private canvas: HTMLCanvasElement | null = null;
     private activeTouches: Map<number, { x: number; y: number }> = new Map();
+    private referenceY: number = 0; // Ship Y position for relative touch detection
 
     constructor(canvas?: HTMLCanvasElement) {
         this.canvas = canvas || null;
@@ -25,38 +26,41 @@ export class Input {
             }
         });
 
-        // Touch events
-        if (this.canvas) {
-            this.setupTouchEvents();
-        }
+        // Touch events on window (works outside canvas)
+        this.setupTouchEvents();
     }
 
     setCanvas(canvas: HTMLCanvasElement): void {
         this.canvas = canvas;
-        this.setupTouchEvents();
+    }
+
+    setReferenceY(y: number): void {
+        this.referenceY = y;
     }
 
     private setupTouchEvents(): void {
-        if (!this.canvas) return;
-
-        // Prevent default touch behaviors (scrolling, zooming)
-        this.canvas.addEventListener('touchstart', (e) => {
+        // Prevent default touch behaviors (scrolling, zooming) on the entire window
+        const preventDefault = (e: TouchEvent) => {
             e.preventDefault();
+        };
+
+        window.addEventListener('touchstart', (e) => {
+            preventDefault(e);
             this.handleTouchStart(e);
         }, { passive: false });
 
-        this.canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
+        window.addEventListener('touchmove', (e) => {
+            preventDefault(e);
             this.handleTouchMove(e);
         }, { passive: false });
 
-        this.canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
+        window.addEventListener('touchend', (e) => {
+            preventDefault(e);
             this.handleTouchEnd(e);
         }, { passive: false });
 
-        this.canvas.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
+        window.addEventListener('touchcancel', (e) => {
+            preventDefault(e);
             this.handleTouchEnd(e);
         }, { passive: false });
     }
@@ -68,6 +72,7 @@ export class Input {
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
 
+        // Convert screen coordinates to canvas coordinates
         return {
             x: (touch.clientX - rect.left) * scaleX,
             y: (touch.clientY - rect.top) * scaleY
@@ -114,23 +119,24 @@ export class Input {
         if (!this.canvas) return;
 
         const canvasWidth = this.canvas.width;
-        const canvasHeight = this.canvas.height;
         const midX = canvasWidth / 2;
-        const midY = canvasHeight / 2;
 
-        // Left side: movement controls
-        if (x < midX) {
-            if (y < midY) {
-                // Upper left: move up
-                this.keys.ArrowUp = isActive;
-            } else {
-                // Lower left: move down
-                this.keys.ArrowDown = isActive;
-            }
-        }
         // Right side: shooting
-        else {
+        if (x >= midX) {
             this.keys.Space = isActive;
+        }
+        // Left side: movement based on ship Y position
+        else {
+            // Compare touch Y with ship Y (referenceY)
+            if (y < this.referenceY) {
+                // Touch is above ship: move up
+                this.keys.ArrowUp = isActive;
+                this.keys.ArrowDown = false;
+            } else {
+                // Touch is below ship: move down
+                this.keys.ArrowDown = isActive;
+                this.keys.ArrowUp = false;
+            }
         }
     }
 

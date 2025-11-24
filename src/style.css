@@ -27,6 +27,32 @@ body {
   /* Prevent scrollbars and touch interactions */
 }
 
+body.fullscreen {
+  /* Additional styles when in fullscreen mode */
+  background-color: #000;
+}
+
+/* Fullscreen styles */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen,
+:-ms-fullscreen {
+  background-color: #000;
+  width: 100%;
+  height: 100%;
+}
+
+#app:fullscreen,
+#app:-webkit-full-screen,
+#app:-moz-full-screen,
+#app:-ms-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 #app {
   width: 100%;
   height: 100vh;

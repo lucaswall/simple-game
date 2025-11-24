@@ -35,6 +35,9 @@ export class Ship implements Collidable {
     update(deltaTime: number): void {
         if (!this.visible) return;
 
+        // Update input reference Y for touch detection
+        this.input.setReferenceY(this.y);
+
         if (this.controllable) {
             if (this.input.keys.ArrowUp) {
                 this.y -= SHIP_SPEED * deltaTime;

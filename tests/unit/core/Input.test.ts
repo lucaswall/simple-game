@@ -74,6 +74,8 @@ describe('Input', () => {
                 y: 0,
                 toJSON: () => {}
             } as DOMRect);
+            // Set reference Y for touch zone detection
+            input.setReferenceY(GAME_HEIGHT / 2);
         });
 
         it('should set canvas using setCanvas method', () => {
@@ -85,12 +87,21 @@ describe('Input', () => {
             expect(input).toBeDefined();
         });
 
-        it('should handle touch in upper left quadrant (ArrowUp)', () => {
-            // Create a mock touch object
+        it('should set reference Y for touch zone detection', () => {
+            input.setReferenceY(100);
+            // Reference Y is used internally, just verify method exists and doesn't throw
+            expect(input).toBeDefined();
+        });
+
+        it('should handle touch above ship Y position (ArrowUp)', () => {
+            // Set reference Y to middle of screen
+            input.setReferenceY(GAME_HEIGHT / 2);
+            
+            // Create a mock touch object above ship Y
             const touch = {
                 identifier: 1,
                 clientX: GAME_WIDTH * 0.25,
-                clientY: GAME_HEIGHT * 0.25,
+                clientY: GAME_HEIGHT * 0.25, // Above ship Y (which is at GAME_HEIGHT / 2)
                 target: mockCanvas,
                 screenX: GAME_WIDTH * 0.25,
                 screenY: GAME_HEIGHT * 0.25,
@@ -110,16 +121,19 @@ describe('Input', () => {
                 targetTouches: [touch]
             });
 
-            mockCanvas.dispatchEvent(touchEvent);
+            window.dispatchEvent(touchEvent);
             expect(input.keys.ArrowUp).toBe(true);
             expect(input.keys.ArrowDown).toBe(false);
         });
 
-        it('should handle touch in lower left quadrant (ArrowDown)', () => {
+        it('should handle touch below ship Y position (ArrowDown)', () => {
+            // Set reference Y to middle of screen
+            input.setReferenceY(GAME_HEIGHT / 2);
+            
             const touch = {
                 identifier: 1,
                 clientX: GAME_WIDTH * 0.25,
-                clientY: GAME_HEIGHT * 0.75,
+                clientY: GAME_HEIGHT * 0.75, // Below ship Y (which is at GAME_HEIGHT / 2)
                 target: mockCanvas,
                 screenX: GAME_WIDTH * 0.25,
                 screenY: GAME_HEIGHT * 0.75,
@@ -139,7 +153,7 @@ describe('Input', () => {
                 targetTouches: [touch]
             });
 
-            mockCanvas.dispatchEvent(touchEvent);
+            window.dispatchEvent(touchEvent);
             expect(input.keys.ArrowDown).toBe(true);
             expect(input.keys.ArrowUp).toBe(false);
         });
@@ -168,11 +182,13 @@ describe('Input', () => {
                 targetTouches: [touch]
             });
 
-            mockCanvas.dispatchEvent(touchEvent);
+            window.dispatchEvent(touchEvent);
             expect(input.keys.Space).toBe(true);
         });
 
         it('should release keys on touch end', () => {
+            input.setReferenceY(GAME_HEIGHT / 2);
+            
             // Start touch
             const touch = {
                 identifier: 1,
@@ -196,7 +212,7 @@ describe('Input', () => {
                 changedTouches: [touch],
                 targetTouches: [touch]
             });
-            mockCanvas.dispatchEvent(startEvent);
+            window.dispatchEvent(startEvent);
             expect(input.keys.ArrowUp).toBe(true);
 
             // End touch
@@ -207,15 +223,17 @@ describe('Input', () => {
                 changedTouches: [touch],
                 targetTouches: []
             });
-            mockCanvas.dispatchEvent(endEvent);
+            window.dispatchEvent(endEvent);
             expect(input.keys.ArrowUp).toBe(false);
         });
 
         it('should handle multiple simultaneous touches', () => {
+            input.setReferenceY(GAME_HEIGHT / 2);
+            
             const touch1 = {
                 identifier: 1,
                 clientX: GAME_WIDTH * 0.25,
-                clientY: GAME_HEIGHT * 0.25,
+                clientY: GAME_HEIGHT * 0.25, // Above ship Y
                 target: mockCanvas,
                 screenX: GAME_WIDTH * 0.25,
                 screenY: GAME_HEIGHT * 0.25,
@@ -229,7 +247,7 @@ describe('Input', () => {
 
             const touch2 = {
                 identifier: 2,
-                clientX: GAME_WIDTH * 0.75,
+                clientX: GAME_WIDTH * 0.75, // Right side for shooting
                 clientY: GAME_HEIGHT * 0.5,
                 target: mockCanvas,
                 screenX: GAME_WIDTH * 0.75,
@@ -250,7 +268,7 @@ describe('Input', () => {
                 targetTouches: [touch1, touch2]
             });
 
-            mockCanvas.dispatchEvent(touchEvent);
+            window.dispatchEvent(touchEvent);
             expect(input.keys.ArrowUp).toBe(true);
             expect(input.keys.Space).toBe(true);
         });

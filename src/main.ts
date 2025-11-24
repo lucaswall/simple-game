@@ -23,6 +23,77 @@ if ('orientation' in screen && 'lock' in screen.orientation) {
     orientationLockSupported = true;
 }
 
+// Fullscreen handling
+function isMobileDevice(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+           ('ontouchstart' in window);
+}
+
+function getFullscreenElement(): Element | null {
+    return document.fullscreenElement ||
+           (document as any).webkitFullscreenElement ||
+           (document as any).mozFullScreenElement ||
+           (document as any).msFullscreenElement ||
+           null;
+}
+
+function requestFullscreen(element: HTMLElement): Promise<void> {
+    if (element.requestFullscreen) {
+        return element.requestFullscreen();
+    } else if ((element as any).webkitRequestFullscreen) {
+        return (element as any).webkitRequestFullscreen();
+    } else if ((element as any).mozRequestFullScreen) {
+        return (element as any).mozRequestFullScreen();
+    } else if ((element as any).msRequestFullscreen) {
+        return (element as any).msRequestFullscreen();
+    }
+    return Promise.reject(new Error('Fullscreen API not supported'));
+}
+
+
+function handleFullscreenChange() {
+    const isFullscreen = getFullscreenElement() !== null;
+    // Update UI if needed when fullscreen changes
+    if (isFullscreen) {
+        document.body.classList.add('fullscreen');
+    } else {
+        document.body.classList.remove('fullscreen');
+    }
+}
+
+// Set up fullscreen change listeners
+const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+fullscreenEvents.forEach(event => {
+    document.addEventListener(event, handleFullscreenChange);
+});
+
+// Auto-request fullscreen on mobile after user interaction
+function attemptFullscreen() {
+    if (isMobileDevice() && !getFullscreenElement()) {
+        // Request fullscreen on the document body or app container
+        const appElement = document.getElementById('app') || document.documentElement;
+        requestFullscreen(appElement as HTMLElement).catch((error) => {
+            // Fullscreen request failed (user denied or not supported)
+            console.log('Fullscreen request failed:', error);
+        });
+    }
+}
+
+// Request fullscreen after first user interaction (required by browsers)
+let fullscreenRequested = false;
+function requestFullscreenOnInteraction() {
+    if (!fullscreenRequested && isMobileDevice()) {
+        fullscreenRequested = true;
+        attemptFullscreen();
+    }
+}
+
+// Listen for user interactions to trigger fullscreen
+['touchstart', 'click', 'keydown'].forEach(event => {
+    document.addEventListener(event, requestFullscreenOnInteraction, { once: true, passive: true });
+});
+
 async function attemptOrientationLock() {
     if (!orientationLockSupported || orientationLockAttempted) {
         return false;
@@ -128,6 +199,7 @@ if ('orientation' in screen) {
 
 // Create initial state (Main Menu)
 const input = new Input(canvas);
+input.setCanvas(canvas); // Ensure canvas is set for coordinate conversion
 const initialState = new MainMenuState(input);
 
 // Initialize Game with initial state
