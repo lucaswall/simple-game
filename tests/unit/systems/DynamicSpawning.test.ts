@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PlayingState } from '../../../src/states/PlayingState';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
@@ -9,12 +9,19 @@ describe('Dynamic Spawning System', () => {
     let playingState: PlayingState;
     let input: MockInput;
     let mockGame: MockGame;
+    let originalRandom: typeof Math.random;
 
     beforeEach(() => {
         input = new MockInput();
         playingState = new PlayingState(input);
         mockGame = new MockGame() as any;
         playingState.enter(mockGame as any);
+        originalRandom = Math.random;
+    });
+
+    afterEach(() => {
+        // Always restore Math.random after each test to ensure idempotency
+        Math.random = originalRandom;
     });
 
     it('should track game time during gameplay', () => {
@@ -92,58 +99,111 @@ describe('Dynamic Spawning System', () => {
     });
 
     it('should start with 10% large asteroid ratio', () => {
-        // Create many asteroids and count large ones
+        // Mock Math.random to ensure deterministic behavior
+        // With largeRatio = 0.1, remainingRatio = 0.9
+        // smallRatio = 0.9 * (4/9) = 0.4, mediumRatio = 0.9 * (5/9) = 0.5
+        // So: small < 0.4, medium < 0.9, large >= 0.9
+        let callCount = 0;
+        let asteroidIndex = 0;
+        Math.random = vi.fn(() => {
+            callCount++;
+            // Call 1: Y position
+            // Call 2: Size determination - alternate to get exactly 10% large
+            if (callCount === 2) {
+                // Every 10th asteroid should be large (asteroidIndex % 10 === 9)
+                // Return 0.95 for large asteroids (>= 0.9), 0.5 for others (< 0.9)
+                return (asteroidIndex % 10 === 9) ? 0.95 : 0.5;
+            }
+            // Call 3+: Speed, vertices, etc.
+            return 0.5;
+        });
+        
         let largeCount = 0;
-        const totalSamples = 1000;
+        const totalSamples = 20; // Reduced since we're testing deterministically
         
         for (let i = 0; i < totalSamples; i++) {
+            callCount = 0; // Reset for each asteroid
+            asteroidIndex = i;
             const asteroid = new Asteroid(undefined, undefined, undefined, undefined, undefined, 0.1);
             if (asteroid.asteroidSize === AsteroidSize.LARGE) {
                 largeCount++;
             }
         }
         
-        // Should be approximately 10% (allow some variance for randomness)
+        // With our mock, exactly 10% should be large (2 out of 20)
         const ratio = largeCount / totalSamples;
-        expect(ratio).toBeGreaterThan(0.08);
-        expect(ratio).toBeLessThan(0.12);
+        expect(ratio).toBe(0.1);
     });
 
     it('should use 50% large asteroid ratio at 3 minutes', () => {
-        // Create many asteroids with 50% large ratio and count large ones
+        // Mock Math.random to ensure deterministic behavior
+        // With largeRatio = 0.5, remainingRatio = 0.5
+        // smallRatio = 0.5 * (4/9) = 0.222..., mediumRatio = 0.5 * (5/9) = 0.277...
+        // So: small < 0.222, medium < 0.5, large >= 0.5
+        let callCount = 0;
+        let asteroidIndex = 0;
+        Math.random = vi.fn(() => {
+            callCount++;
+            // Call 1: Y position
+            // Call 2: Size determination - alternate to get exactly 50% large
+            if (callCount === 2) {
+                // Alternate between large (>= 0.5) and small/medium (< 0.5)
+                return (asteroidIndex % 2 === 0) ? 0.6 : 0.3; // Even = large, odd = small
+            }
+            // Call 3+: Speed, vertices, etc.
+            return 0.5;
+        });
+        
         let largeCount = 0;
-        const totalSamples = 1000;
+        const totalSamples = 20; // Reduced since we're testing deterministically
         
         for (let i = 0; i < totalSamples; i++) {
+            callCount = 0; // Reset for each asteroid
+            asteroidIndex = i;
             const asteroid = new Asteroid(undefined, undefined, undefined, undefined, undefined, 0.5);
             if (asteroid.asteroidSize === AsteroidSize.LARGE) {
                 largeCount++;
             }
         }
         
-        // Should be approximately 50% (allow some variance for randomness)
+        // With our mock, exactly 50% should be large (10 out of 20)
         const ratio = largeCount / totalSamples;
-        expect(ratio).toBeGreaterThan(0.45);
-        expect(ratio).toBeLessThan(0.55);
+        expect(ratio).toBe(0.5);
     });
 
     it('should use 30% large asteroid ratio at 1.5 minutes', () => {
         // At 1.5 minutes, ratio should be halfway: 30%
         // (10% + (50% - 10%) * 0.5 = 30%)
+        // Mock Math.random to ensure deterministic behavior
+        // With largeRatio = 0.3, remainingRatio = 0.7
+        // smallRatio = 0.7 * (4/9) = 0.311..., mediumRatio = 0.7 * (5/9) = 0.388...
+        // So: small < 0.311, medium < 0.311+0.388=0.699, large >= 0.699
+        let callCount = 0;
+        Math.random = vi.fn(() => {
+            callCount++;
+            // Call 1: Y position (line 31)
+            // Call 2: Size determination (line 37) - this is what we're testing
+            // Call 3+: Speed, flash timer, vertex count, vertex radii
+            if (callCount === 2) {
+                return 0.7; // Should result in large asteroid (0.7 >= 0.699)
+            }
+            // For other calls (Y position, speed, vertices), return neutral values
+            return 0.5;
+        });
+        
         let largeCount = 0;
-        const totalSamples = 1000;
+        const totalSamples = 10; // Reduced since we're testing deterministically
         
         for (let i = 0; i < totalSamples; i++) {
+            callCount = 0; // Reset for each asteroid
             const asteroid = new Asteroid(undefined, undefined, undefined, undefined, undefined, 0.3);
             if (asteroid.asteroidSize === AsteroidSize.LARGE) {
                 largeCount++;
             }
         }
         
-        // Should be approximately 30% (allow some variance for randomness)
-        const ratio = largeCount / totalSamples;
-        expect(ratio).toBeGreaterThan(0.25);
-        expect(ratio).toBeLessThan(0.35);
+        // With our mock, all should be large (since 0.7 >= 0.699)
+        expect(largeCount).toBe(totalSamples);
     });
 
     it('should subtract 1 minute from game time when a life is lost', () => {

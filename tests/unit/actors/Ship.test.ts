@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Ship } from '../../../src/actors/Ship';
 import { MockInput } from '../../utils/MockInput';
+import { createMockCanvas } from '../../utils/MockCanvas';
 import { Bullet } from '../../../src/actors/Bullet';
 import { SHIP_SIZE } from '../../../src/core/Constants';
 import { PLAY_AREA_HEIGHT, SHIP_SPEED, SHIP_FIRE_RATE_MS } from '../../../src/states/PlayingState';
@@ -303,14 +304,11 @@ describe('Ship', () => {
     });
 
     describe('Propulsion Particles', () => {
-        let canvas: HTMLCanvasElement;
         let ctx: CanvasRenderingContext2D;
 
         beforeEach(() => {
-            canvas = document.createElement('canvas');
-            canvas.width = 1280;
-            canvas.height = 720;
-            ctx = canvas.getContext('2d')!;
+            const mockCanvas = createMockCanvas();
+            ctx = mockCanvas.ctx;
             ship.visible = true;
         });
 
@@ -367,12 +365,6 @@ describe('Ship', () => {
         });
 
         it('should draw propulsion particles', () => {
-            if (!ctx) {
-                // Skip if canvas context is not available
-                expect(ship['propulsionParticles'].length).toBeGreaterThanOrEqual(0);
-                return;
-            }
-            
             ship.update(0.05);
             
             const arcSpy = vi.spyOn(ctx, 'arc');

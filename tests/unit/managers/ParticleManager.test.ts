@@ -1,18 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ParticleManager } from '../../../src/managers/ParticleManager';
 import { PARTICLE_COUNT_PER_EXPLOSION } from '../../../src/states/PlayingState';
+import { createMockCanvas } from '../../utils/MockCanvas';
 
 describe('ParticleManager', () => {
     let particleManager: ParticleManager;
-    let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
 
     beforeEach(() => {
         particleManager = new ParticleManager();
-        canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        ctx = canvas.getContext('2d')!;
+        const mockCanvas = createMockCanvas();
+        ctx = mockCanvas.ctx;
     });
 
     it('should create correct number of particles on explosion', () => {
@@ -77,25 +75,19 @@ describe('ParticleManager', () => {
         });
     });
 
-    it('should draw particles', () => {
-        particleManager.createExplosion(100, 200);
-        
-        if (!ctx) {
-            // Skip if canvas context is not available
-            expect(particleManager.particles.length).toBeGreaterThan(0);
-            return;
-        }
-        
-        const beginPathSpy = vi.spyOn(ctx, 'beginPath');
-        const arcSpy = vi.spyOn(ctx, 'arc');
-        const fillSpy = vi.spyOn(ctx, 'fill');
-        
-        particleManager.draw(ctx);
-        
-        expect(beginPathSpy).toHaveBeenCalledTimes(particleManager.particles.length);
-        expect(arcSpy).toHaveBeenCalledTimes(particleManager.particles.length);
-        expect(fillSpy).toHaveBeenCalledTimes(particleManager.particles.length);
-    });
+        it('should draw particles', () => {
+            particleManager.createExplosion(100, 200);
+            
+            const beginPathSpy = vi.spyOn(ctx, 'beginPath');
+            const arcSpy = vi.spyOn(ctx, 'arc');
+            const fillSpy = vi.spyOn(ctx, 'fill');
+            
+            particleManager.draw(ctx);
+            
+            expect(beginPathSpy).toHaveBeenCalledTimes(particleManager.particles.length);
+            expect(arcSpy).toHaveBeenCalledTimes(particleManager.particles.length);
+            expect(fillSpy).toHaveBeenCalledTimes(particleManager.particles.length);
+        });
 
     it('should handle multiple explosions', () => {
         particleManager.createExplosion(100, 200);
@@ -154,12 +146,6 @@ describe('ParticleManager', () => {
         });
 
         it('should draw explosion visuals', () => {
-            if (!ctx) {
-                // Skip if canvas context is not available
-                expect(particleManager.explosionVisuals.length).toBe(0);
-                return;
-            }
-            
             particleManager.createExplosionVisual(200, 300, 100, 0.5);
             
             const arcSpy = vi.spyOn(ctx, 'arc');

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Asteroid, AsteroidSize } from '../../../src/actors/Asteroid';
 import { Bullet } from '../../../src/actors/Bullet';
 import { MockInput } from '../../utils/MockInput';
@@ -14,16 +14,23 @@ describe('Exploding Asteroids', () => {
     let mockGame: MockGame;
     let context: CollisionContext;
     let onExplosion: ReturnType<typeof vi.fn>;
+    let originalRandom: typeof Math.random;
 
     beforeEach(() => {
         mockGame = new MockGame() as any;
         onExplosion = vi.fn();
+        originalRandom = Math.random;
         
         context = {
             game: mockGame as any,
             particleManager: new ParticleManager(),
             onExplosion: onExplosion
         };
+    });
+
+    afterEach(() => {
+        // Always restore Math.random after each test to ensure idempotency
+        Math.random = originalRandom;
     });
 
     describe('Visual Effects', () => {
@@ -246,9 +253,25 @@ describe('Exploding Asteroids', () => {
             playingState['gameTime'] = 59;
             playingState['asteroidTimer'] = 0;
             
+            // Mock Math.random to ensure deterministic behavior
+            // Even if random values would suggest exploding, it shouldn't spawn before 1 minute
+            let callCount = 0;
+            
+            Math.random = vi.fn(() => {
+                callCount++;
+                // Return low values that would normally trigger exploding asteroids
+                // But since gameTime < 60, they should never be exploding
+                if (callCount === 2 || callCount === 3) {
+                    return 0.01; // Very low value that would trigger exploding if gameTime >= 60
+                }
+                return 0.5; // Neutral values for other calls
+            });
+            
             // Spawn multiple asteroids to check probability
             let explodingCount = 0;
             for (let i = 0; i < 100; i++) {
+                callCount = 0; // Reset for each spawn
+                playingState['asteroidTimer'] = 0;
                 playingState['updateAsteroids'](0.1);
                 if (playingState.asteroids.length > 0) {
                     const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
@@ -266,22 +289,29 @@ describe('Exploding Asteroids', () => {
             playingState['gameTime'] = 60;
             playingState['asteroidTimer'] = 0;
             
-            // Mock Math.random to control probability
+            // Mock Math.random to control probability deterministically
             let explodingCount = 0;
-            const originalRandom = Math.random;
             let callCount = 0;
             
             Math.random = vi.fn(() => {
                 callCount++;
-                // First call is for size determination, second is for exploding chance
-                if (callCount % 2 === 0) {
-                    // Return values that will result in ~10% exploding chance
-                    return callCount < 20 ? 0.05 : 0.95; // First 10 will be exploding
+                // The exploding chance check happens around call 2-3 per asteroid spawn
+                // At 1 minute: explodingChance = 0.1, so return < 0.1 to make it exploding
+                // Call 1: angled check (if gameTime >= 60)
+                // Call 2: angle calculation (if angled) OR exploding check (if not angled)
+                // Call 3: exploding check (if angled)
+                // Then Asteroid constructor calls many more times
+                if (callCount === 2 || callCount === 3) {
+                    // Return 0.05 which is < 0.1 (10% chance), making it exploding
+                    return 0.05;
                 }
-                return originalRandom();
+                // For other calls (size, speed, vertices, etc.), return neutral values
+                return 0.5;
             });
             
             for (let i = 0; i < 20; i++) {
+                callCount = 0; // Reset call counter for each asteroid spawn
+                playingState['asteroidTimer'] = 0;
                 playingState['updateAsteroids'](0.1);
                 if (playingState.asteroids.length > 0) {
                     const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
@@ -291,8 +321,6 @@ describe('Exploding Asteroids', () => {
                     playingState.asteroids.pop();
                 }
             }
-            
-            Math.random = originalRandom;
             
             // Should have some exploding asteroids
             expect(explodingCount).toBeGreaterThan(0);
@@ -303,19 +331,23 @@ describe('Exploding Asteroids', () => {
             playingState['asteroidTimer'] = 0;
             
             let explodingCount = 0;
-            const originalRandom = Math.random;
             let callCount = 0;
             
             Math.random = vi.fn(() => {
                 callCount++;
-                if (callCount % 2 === 0) {
-                    // Return values that will result in ~20% exploding chance
-                    return callCount < 40 ? 0.15 : 0.95; // First 20 will be exploding
+                // At 3 minutes: explodingChance = 0.2, so return < 0.2 to make it exploding
+                // The exploding check is around call 2-3 per asteroid spawn
+                if (callCount === 2 || callCount === 3) {
+                    // Return 0.15 which is < 0.2 (20% chance), making it exploding
+                    return 0.15;
                 }
-                return originalRandom();
+                // For other calls (size, speed, vertices, etc.), return neutral values
+                return 0.5;
             });
             
             for (let i = 0; i < 20; i++) {
+                callCount = 0; // Reset call counter for each asteroid spawn
+                playingState['asteroidTimer'] = 0;
                 playingState['updateAsteroids'](0.1);
                 if (playingState.asteroids.length > 0) {
                     const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
@@ -325,8 +357,6 @@ describe('Exploding Asteroids', () => {
                     playingState.asteroids.pop();
                 }
             }
-            
-            Math.random = originalRandom;
             
             // Should have more exploding asteroids than at 1 minute
             expect(explodingCount).toBeGreaterThan(0);
@@ -338,19 +368,23 @@ describe('Exploding Asteroids', () => {
             playingState['asteroidTimer'] = 0;
             
             let explodingCount = 0;
-            const originalRandom = Math.random;
             let callCount = 0;
             
             Math.random = vi.fn(() => {
                 callCount++;
-                if (callCount % 2 === 0) {
-                    // Return values that will result in ~15% exploding chance
-                    return callCount < 30 ? 0.10 : 0.95;
+                // At 2 minutes: explodingChance = 0.15, so return < 0.15 to make it exploding
+                // The exploding check is around call 2-3 per asteroid spawn
+                if (callCount === 2 || callCount === 3) {
+                    // Return 0.10 which is < 0.15 (15% chance), making it exploding
+                    return 0.10;
                 }
-                return originalRandom();
+                // For other calls, return neutral values
+                return 0.5;
             });
             
             for (let i = 0; i < 20; i++) {
+                callCount = 0; // Reset call counter for each asteroid spawn
+                playingState['asteroidTimer'] = 0;
                 playingState['updateAsteroids'](0.1);
                 if (playingState.asteroids.length > 0) {
                     const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
@@ -360,8 +394,6 @@ describe('Exploding Asteroids', () => {
                     playingState.asteroids.pop();
                 }
             }
-            
-            Math.random = originalRandom;
             
             expect(explodingCount).toBeGreaterThan(0);
         });

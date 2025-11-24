@@ -3,18 +3,16 @@ import { Game } from '../../../src/core/Game';
 import { MainMenuState } from '../../../src/states/MainMenuState';
 import { PlayingState } from '../../../src/states/PlayingState';
 import { MockInput } from '../../utils/MockInput';
+import { createMockCanvas } from '../../utils/MockCanvas';
 
 describe('Game', () => {
-    let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
     let input: MockInput;
     let game: Game;
 
     beforeEach(() => {
-        canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        ctx = canvas.getContext('2d')!;
+        const mockCanvas = createMockCanvas();
+        ctx = mockCanvas.ctx;
         input = new MockInput();
         const initialState = new MainMenuState(input);
         game = new Game(ctx, initialState);

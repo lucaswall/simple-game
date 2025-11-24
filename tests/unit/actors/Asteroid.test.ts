@@ -1,22 +1,42 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Asteroid, AsteroidSize } from '../../../src/actors/Asteroid';
 import { GAME_WIDTH } from '../../../src/core/Constants';
 import { ASTEROID_LARGE_SIZE, ASTEROID_MEDIUM_SIZE, ASTEROID_SMALL_SIZE, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, PLAY_AREA_HEIGHT } from '../../../src/states/PlayingState';
 
 describe('Asteroid', () => {
+    let originalRandom: typeof Math.random;
+
+    beforeEach(() => {
+        originalRandom = Math.random;
+    });
+
+    afterEach(() => {
+        // Always restore Math.random after each test to ensure idempotency
+        Math.random = originalRandom;
+    });
     describe('Initialization', () => {
         it('should spawn asteroid at right edge of screen by default', () => {
+            // Mock Math.random to ensure deterministic behavior
+            // With largeRatio = 0.1, remainingRatio = 0.9
+            // smallRatio = 0.9 * (4/9) = 0.4, mediumRatio = 0.9 * (5/9) = 0.5
+            // So: small < 0.4, medium < 0.9, large >= 0.9
+            let callCount = 0;
+            Math.random = vi.fn(() => {
+                callCount++;
+                // Call 1: Y position
+                // Call 2: Size determination - return 0.3 to get small asteroid
+                if (callCount === 2) {
+                    return 0.3; // < 0.4, so small asteroid
+                }
+                // Call 3+: Speed, vertices, etc.
+                return 0.5;
+            });
+            
             const asteroid = new Asteroid();
             expect(asteroid.x).toBe(GAME_WIDTH);
-            // Asteroid size should be small, medium, or large
-            expect([AsteroidSize.SMALL, AsteroidSize.MEDIUM, AsteroidSize.LARGE]).toContain(asteroid.asteroidSize);
-            if (asteroid.asteroidSize === AsteroidSize.LARGE) {
-                expect(asteroid.size).toBe(ASTEROID_LARGE_SIZE);
-            } else if (asteroid.asteroidSize === AsteroidSize.MEDIUM) {
-                expect(asteroid.size).toBe(ASTEROID_MEDIUM_SIZE);
-            } else {
-                expect(asteroid.size).toBe(ASTEROID_SMALL_SIZE);
-            }
+            // With our mock, should be small asteroid
+            expect(asteroid.asteroidSize).toBe(AsteroidSize.SMALL);
+            expect(asteroid.size).toBe(ASTEROID_SMALL_SIZE);
         });
 
         it('should create asteroids with correct sizes for each type', () => {
@@ -34,6 +54,20 @@ describe('Asteroid', () => {
         });
 
         it('should have speed within valid range for default asteroid', () => {
+            // Mock Math.random to ensure deterministic behavior
+            let callCount = 0;
+            Math.random = vi.fn(() => {
+                callCount++;
+                // Call 1: Y position
+                // Call 2: Size determination
+                // Call 3: Speed - return 0.5 to get middle speed
+                if (callCount === 3) {
+                    return 0.5; // Results in middle speed
+                }
+                // Call 4+: Vertices, etc.
+                return 0.5;
+            });
+            
             const asteroid = new Asteroid();
             expect(asteroid.speed).toBeGreaterThanOrEqual(ASTEROID_MIN_SPEED);
             expect(asteroid.speed).toBeLessThanOrEqual(ASTEROID_MAX_SPEED);
@@ -102,6 +136,11 @@ describe('Asteroid', () => {
 
     describe('Exploding Asteroids', () => {
         it('should initialize flash timer for exploding asteroids', () => {
+            // Mock Math.random to ensure deterministic flash timer
+            Math.random = vi.fn(() => {
+                return 0.1; // Results in flash timer = 0.1 * 0.2 = 0.02
+            });
+            
             const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0, 0.1, undefined, true);
             expect(asteroid.isExploding).toBe(true);
             expect(asteroid['flashTimer']).toBeGreaterThanOrEqual(0);
