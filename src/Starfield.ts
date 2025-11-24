@@ -1,5 +1,6 @@
 import { Actor } from './interfaces/Actor';
-import { GAME_WIDTH, GAME_HEIGHT, STAR_COUNT, STAR_MIN_SPEED, STAR_MAX_SPEED } from './Constants';
+import { GAME_WIDTH, STAR_COUNT, STAR_MIN_SPEED, STAR_MAX_SPEED } from './Constants';
+import { PLAY_AREA_HEIGHT } from './states/PlayingState';
 
 interface Star {
     x: number;
@@ -16,7 +17,7 @@ export class Starfield implements Actor {
         for (let i = 0; i < STAR_COUNT; i++) {
             this.stars.push({
                 x: Math.random() * GAME_WIDTH,
-                y: Math.random() * GAME_HEIGHT,
+                y: Math.random() * PLAY_AREA_HEIGHT,
                 size: Math.random() * 2 + 1,
                 speed: Math.random() * (STAR_MAX_SPEED - STAR_MIN_SPEED) + STAR_MIN_SPEED,
                 brightness: Math.random()
@@ -29,7 +30,7 @@ export class Starfield implements Actor {
             star.x -= star.speed * deltaTime;
             if (star.x < 0) {
                 star.x = GAME_WIDTH;
-                star.y = Math.random() * GAME_HEIGHT;
+                star.y = Math.random() * PLAY_AREA_HEIGHT;
             }
         });
     }

@@ -6,7 +6,7 @@ import { Bullet } from '../Bullet';
 import { Starfield } from '../Starfield';
 import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
-import { SHIP_X_POSITION } from '../Constants';
+import { SHIP_X_POSITION, UI_HEIGHT, GAME_HEIGHT } from '../Constants';
 import { MainMenuState } from './MainMenuState';
 
 // Gameplay-specific constants
@@ -54,6 +54,9 @@ export const BULLET_SIZE = 5; // Radius
 
 // Score constants
 const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
+
+// Play area (gameplay area below UI)
+export const PLAY_AREA_HEIGHT = GAME_HEIGHT - UI_HEIGHT;
 
 export class PlayingState implements GameState {
     input: Input;
@@ -116,18 +119,29 @@ export class PlayingState implements GameState {
     }
 
     draw(_game: Game, ctx: CanvasRenderingContext2D): void {
+        // Draw UI area background
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, ctx.canvas.width, UI_HEIGHT);
+        
+        // Draw score in UI area
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Score: ${this.score}`, 20, 20);
+        
+        // Translate to gameplay area
+        ctx.save();
+        ctx.translate(0, UI_HEIGHT);
+        
+        // Draw gameplay elements
         this.starfield.draw(ctx);
         this.asteroids.forEach(a => a.draw(ctx));
         this.bullets.forEach(b => b.draw(ctx));
         this.particleManager.draw(ctx);
         this.ship.draw(ctx);
         
-        // Draw score
-        ctx.fillStyle = '#fff';
-        ctx.font = '24px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(`Score: ${this.score}`, 20, 20);
+        ctx.restore();
     }
 
     exit(_game: Game): void { }

@@ -1,12 +1,12 @@
 import { Actor } from './interfaces/Actor';
 import { Input } from './Input';
 import { Bullet } from './Bullet';
-import { GAME_HEIGHT, SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from './Constants';
-import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE } from './states/PlayingState';
+import { SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from './Constants';
+import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE, PLAY_AREA_HEIGHT } from './states/PlayingState';
 
 export class Ship implements Actor {
     x: number = SHIP_X_POSITION;
-    y: number = GAME_HEIGHT / 2;
+    y: number = PLAY_AREA_HEIGHT / 2;
     private input: Input;
     private bullets: Bullet[];
     private lastShotTime: number = 0;
@@ -30,8 +30,8 @@ export class Ship implements Actor {
                 this.y += SHIP_SPEED * deltaTime;
             }
 
-            // Clamp position
-            this.y = Math.max(SHIP_SIZE, Math.min(GAME_HEIGHT - SHIP_SIZE, this.y));
+            // Clamp position to gameplay area
+            this.y = Math.max(SHIP_SIZE, Math.min(PLAY_AREA_HEIGHT - SHIP_SIZE, this.y));
 
             // Shooting
             if (this.input.keys.Space) {

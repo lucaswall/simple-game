@@ -5,7 +5,7 @@ import { Starfield } from '../Starfield';
 import { Bullet } from '../Bullet';
 import { Input } from '../Input';
 import { PlayingState } from './PlayingState';
-import { SHIP_X_POSITION } from '../Constants';
+import { SHIP_X_POSITION, UI_HEIGHT } from '../Constants';
 
 // Intro-specific constants
 const INTRO_CONSTANT_SPEED = 500; // Pixels per second for constant speed entry
@@ -240,9 +240,20 @@ export class IntroState implements GameState {
     }
 
     draw(_game: Game, ctx: CanvasRenderingContext2D): void {
+        // Draw UI area background (same as gameplay)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, ctx.canvas.width, UI_HEIGHT);
+        
+        // Translate to gameplay area (same as gameplay)
+        ctx.save();
+        ctx.translate(0, UI_HEIGHT);
+        
+        // Draw gameplay elements
         this.starfield.draw(ctx);
         this.bullets.forEach(b => b.draw(ctx));
         this.ship.draw(ctx);
+        
+        ctx.restore();
     }
 
     exit(_game: Game): void { }

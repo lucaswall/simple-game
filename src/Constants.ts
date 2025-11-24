@@ -15,6 +15,7 @@ export const STAR_MAX_SPEED = 200;
 export const SHAKE_DECAY = 500; // Pixels per second decay
 
 // UI constants
+export const UI_HEIGHT = 60; // Height of UI area at top of screen
 export const PAUSE_OVERLAY_ALPHA = 0.5;
 export const PAUSE_FONT_SIZE = 48;
 export const MENU_TITLE_FONT_SIZE = 72;
