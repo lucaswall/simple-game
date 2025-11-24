@@ -130,21 +130,21 @@ describe('Ship', () => {
             expect(ship.heat).toBe(0);
         });
 
-        it('should increase heat by 1 per shot', () => {
+        it('should increase heat by 2 per shot (double fast)', () => {
             vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000);
             input.pressKey('Space');
             ship.update(0.001);
-            expect(ship.heat).toBe(1);
+            expect(ship.heat).toBe(2);
             
             // Advance time to allow next shot
             vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000 + SHIP_FIRE_RATE_MS + 1);
             ship.update(0.001);
-            expect(ship.heat).toBe(2);
+            expect(ship.heat).toBe(4);
             vi.restoreAllMocks();
         });
 
         it('should cap heat at 10', () => {
-            ship.heat = 9;
+            ship.heat = 8; // With +2 per shot, starting at 8 will reach 10
             vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000);
             input.pressKey('Space');
             ship.update(0.001);
@@ -189,7 +189,7 @@ describe('Ship', () => {
         it('should start overheat timer when heat reaches 10', () => {
             const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000; // 1.25 seconds
             
-            ship.heat = 9;
+            ship.heat = 8; // With +2 per shot, starting at 8 will reach 10
             ship['overheatTimer'] = -1; // Timer not started
             vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000);
             input.pressKey('Space');
@@ -287,7 +287,7 @@ describe('Ship', () => {
         });
 
         it('should reset heat cooldown timer when entering overheat', () => {
-            ship.heat = 9;
+            ship.heat = 8; // With +2 per shot, starting at 8 will reach 10
             ship['overheatTimer'] = -1; // Timer not started
             ship['heatCooldownTimer'] = 0.4; // Partially through cooldown
             

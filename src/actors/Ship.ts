@@ -63,8 +63,8 @@ export class Ship implements Collidable {
                 if (now - this.lastShotTime > SHIP_FIRE_RATE_MS) {
                     this.bullets.push(new Bullet(this.x, this.y, BULLET_SPEED, BULLET_SIZE));
                     this.lastShotTime = now;
-                    // Increase heat by 1 per shot
-                    this.heat = Math.min(10, this.heat + 1);
+                    // Increase heat by 2 per shot (double fast)
+                    this.heat = Math.min(10, this.heat + 2);
                 }
             }
         }
