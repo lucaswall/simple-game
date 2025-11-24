@@ -95,5 +95,39 @@ describe('Scoring System', () => {
         expect(playingState.asteroids.length).toBe(initialAsteroidCount + 1); // -1 + 2 = +1
         expect(playingState.asteroids.every(a => a.asteroidSize === AsteroidSize.SMALL)).toBe(true);
     });
+
+    it('should handle score accumulation correctly', () => {
+        // Destroy multiple asteroids of different sizes
+        const smallAsteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
+        const mediumAsteroid = new Asteroid(300, 300, AsteroidSize.MEDIUM, -300, 0);
+        const largeAsteroid = new Asteroid(400, 400, AsteroidSize.LARGE, -300, 0);
+        
+        const smallBullet = new Bullet(smallAsteroid.x, smallAsteroid.y, 800, 5);
+        const mediumBullet = new Bullet(mediumAsteroid.x, mediumAsteroid.y, 800, 5);
+        const largeBullet = new Bullet(largeAsteroid.x, largeAsteroid.y, 800, 5);
+        
+        playingState.asteroids.push(smallAsteroid, mediumAsteroid, largeAsteroid);
+        playingState.bullets.push(smallBullet, mediumBullet, largeBullet);
+        
+        playingState['checkCollisions'](mockGame as any);
+        
+        // Should have points from small (destroyed) + medium (split) + large (split)
+        // Note: medium and large create new asteroids, so we need to check the score increment
+        expect(playingState.score).toBeGreaterThanOrEqual(ASTEROID_SMALL_POINTS);
+    });
+
+    it('should not award points for asteroids destroyed by explosion if already destroyed', () => {
+        const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0, 0.1, undefined, false);
+        asteroid.active = false; // Already destroyed
+        playingState.asteroids.push(asteroid);
+        
+        const initialScore = playingState.score;
+        
+        // Try to handle explosion on already destroyed asteroid
+        playingState['handleExplosion'](200, 200, 100, mockGame as any);
+        
+        // Score should not change
+        expect(playingState.score).toBe(initialScore);
+    });
 });
 

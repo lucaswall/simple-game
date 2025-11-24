@@ -82,7 +82,12 @@ export class Asteroid implements Collidable {
         }
 
         this.isExploding = isExploding;
-        this.flashTimer = Math.random() * ASTEROID_FLASH_INTERVAL; // Randomize initial flash phase
+        // Only initialize flash timer for exploding asteroids
+        if (this.isExploding) {
+            this.flashTimer = Math.random() * ASTEROID_FLASH_INTERVAL; // Randomize initial flash phase
+        } else {
+            this.flashTimer = 0;
+        }
 
         const vertexCount = Math.floor(Math.random() * (ASTEROID_MAX_VERTICES - ASTEROID_MIN_VERTICES)) + ASTEROID_MIN_VERTICES;
         for (let i = 0; i < vertexCount; i++) {

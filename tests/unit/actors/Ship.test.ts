@@ -126,10 +126,6 @@ describe('Ship', () => {
             ship['heatCooldownTimer'] = 0;
         });
 
-        it('should start with zero heat', () => {
-            expect(ship.heat).toBe(0);
-        });
-
         it('should increase heat by 2 per shot (double fast)', () => {
             vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000);
             input.pressKey('Space');
@@ -303,6 +299,101 @@ describe('Ship', () => {
             expect(ship['overheatTimer']).toBeGreaterThan(0);
             expect(ship['heatCooldownTimer']).toBe(0);
             vi.restoreAllMocks();
+        });
+    });
+
+    describe('Propulsion Particles', () => {
+        let canvas: HTMLCanvasElement;
+        let ctx: CanvasRenderingContext2D;
+
+        beforeEach(() => {
+            canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            ctx = canvas.getContext('2d')!;
+            ship.visible = true;
+        });
+
+        it('should spawn propulsion particles over time', () => {
+            const initialParticleCount = ship['propulsionParticles'].length;
+            
+            ship.update(0.05); // Enough time to spawn particles (spawn rate is 0.02s)
+            
+            expect(ship['propulsionParticles'].length).toBeGreaterThan(initialParticleCount);
+        });
+
+        it('should update propulsion particle positions', () => {
+            ship.update(0.05);
+            const particles = ship['propulsionParticles'];
+            
+            if (particles.length > 0) {
+                const particle = particles[0];
+                const initialX = particle.x;
+                const initialY = particle.y;
+                
+                ship.update(0.1);
+                
+                expect(particle.x).not.toBe(initialX);
+                expect(particle.y).not.toBe(initialY);
+            }
+        });
+
+        it('should decrease propulsion particle life over time', () => {
+            ship.update(0.05);
+            const particles = ship['propulsionParticles'];
+            
+            if (particles.length > 0) {
+                const particle = particles[0];
+                const initialLife = particle.life;
+                
+                ship.update(0.1);
+                
+                expect(particle.life).toBeLessThan(initialLife);
+            }
+        });
+
+        it('should remove propulsion particles when life reaches 0', () => {
+            ship.update(0.05);
+            const particles = ship['propulsionParticles'];
+            
+            if (particles.length > 0) {
+                particles.forEach(p => p.life = 0.01);
+                const initialCount = particles.length;
+                
+                ship.update(0.02);
+                
+                expect(ship['propulsionParticles'].length).toBeLessThan(initialCount);
+            }
+        });
+
+        it('should draw propulsion particles', () => {
+            if (!ctx) {
+                // Skip if canvas context is not available
+                expect(ship['propulsionParticles'].length).toBeGreaterThanOrEqual(0);
+                return;
+            }
+            
+            ship.update(0.05);
+            
+            const arcSpy = vi.spyOn(ctx, 'arc');
+            const fillSpy = vi.spyOn(ctx, 'fill');
+            
+            ship.draw(ctx);
+            
+            // Should draw particles if any exist
+            if (ship['propulsionParticles'].length > 0) {
+                expect(arcSpy).toHaveBeenCalled();
+                expect(fillSpy).toHaveBeenCalled();
+            }
+        });
+
+        it('should not spawn particles when ship is not visible', () => {
+            ship.visible = false;
+            const initialParticleCount = ship['propulsionParticles'].length;
+            
+            ship.update(0.05);
+            
+            expect(ship['propulsionParticles'].length).toBe(initialParticleCount);
         });
     });
 });

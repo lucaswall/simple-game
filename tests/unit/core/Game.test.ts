@@ -104,5 +104,53 @@ describe('Game', () => {
         expect(enterSpy).toHaveBeenCalledWith(game);
     });
 
+    it('should handle shake intensity decay rate correctly', () => {
+        game.shakeIntensity = 100;
+        const initialIntensity = game.shakeIntensity;
+        
+        game.update(0.1);
+        const afterUpdate = game.shakeIntensity;
+        
+        // Should decay, but not instantly
+        expect(afterUpdate).toBeLessThan(initialIntensity);
+        expect(afterUpdate).toBeGreaterThan(0);
+    });
+
+    it('should handle multiple freeze calls correctly', () => {
+        const playingState = new PlayingState(input);
+        game.changeState(playingState);
+        
+        game.startFreeze(0.3);
+        expect(game.timeScale).toBe(0);
+        
+        // Start another freeze before first completes
+        game.update(0.1);
+        game.startFreeze(0.5);
+        
+        // Should still be frozen
+        expect(game.timeScale).toBe(0);
+        
+        // Complete both freezes
+        game.update(0.6);
+        expect(game.timeScale).toBe(1);
+    });
+
+    it('should handle time scale changes correctly', () => {
+        const playingState = new PlayingState(input);
+        game.changeState(playingState);
+        playingState['gameTime'] = 0;
+        
+        game.setTimeScale(0.25);
+        game.update(1.0);
+        
+        // Game time should advance by 0.25 (quarter speed)
+        expect(playingState['gameTime']).toBeCloseTo(0.25, 2);
+        
+        game.setTimeScale(2.0);
+        game.update(1.0);
+        
+        // Game time should advance by 2.0 (double speed)
+        expect(playingState['gameTime']).toBeCloseTo(2.25, 2);
+    });
 });
 

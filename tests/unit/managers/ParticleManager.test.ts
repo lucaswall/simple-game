@@ -103,5 +103,74 @@ describe('ParticleManager', () => {
         
         expect(particleManager.particles).toHaveLength(PARTICLE_COUNT_PER_EXPLOSION * 2);
     });
+
+    describe('Explosion Visuals', () => {
+        it('should create explosion visual with correct properties', () => {
+            const x = 200;
+            const y = 300;
+            const maxRadius = 150;
+            const duration = 0.5;
+            
+            particleManager.createExplosionVisual(x, y, maxRadius, duration);
+            
+            expect(particleManager.explosionVisuals).toHaveLength(1);
+            const visual = particleManager.explosionVisuals[0];
+            expect(visual.x).toBe(x);
+            expect(visual.y).toBe(y);
+            expect(visual.maxRadius).toBe(maxRadius);
+            expect(visual.duration).toBe(duration);
+            expect(visual.timer).toBe(0);
+        });
+
+        it('should update explosion visual timer', () => {
+            particleManager.createExplosionVisual(100, 200, 100, 0.5);
+            const visual = particleManager.explosionVisuals[0];
+            const initialTimer = visual.timer;
+            
+            particleManager.update(0.1);
+            
+            expect(visual.timer).toBe(initialTimer + 0.1);
+        });
+
+        it('should remove explosion visual when duration expires', () => {
+            particleManager.createExplosionVisual(100, 200, 100, 0.3);
+            
+            particleManager.update(0.3);
+            
+            expect(particleManager.explosionVisuals).toHaveLength(0);
+        });
+
+        it('should handle multiple explosion visuals', () => {
+            particleManager.createExplosionVisual(100, 200, 100, 0.5);
+            particleManager.createExplosionVisual(300, 400, 150, 0.6);
+            
+            expect(particleManager.explosionVisuals).toHaveLength(2);
+            
+            particleManager.update(0.5);
+            
+            // First should be removed, second should remain
+            expect(particleManager.explosionVisuals).toHaveLength(1);
+            expect(particleManager.explosionVisuals[0].maxRadius).toBe(150);
+        });
+
+        it('should draw explosion visuals', () => {
+            if (!ctx) {
+                // Skip if canvas context is not available
+                expect(particleManager.explosionVisuals.length).toBe(0);
+                return;
+            }
+            
+            particleManager.createExplosionVisual(200, 300, 100, 0.5);
+            
+            const arcSpy = vi.spyOn(ctx, 'arc');
+            const strokeSpy = vi.spyOn(ctx, 'stroke');
+            
+            particleManager.draw(ctx);
+            
+            // Should draw explosion visual (arc and stroke)
+            expect(arcSpy).toHaveBeenCalled();
+            expect(strokeSpy).toHaveBeenCalled();
+        });
+    });
 });
 

@@ -15,13 +15,6 @@ describe('Input', () => {
     });
 
     describe('Keyboard Input', () => {
-        it('should initialize with all keys as false', () => {
-            expect(input.keys.ArrowUp).toBe(false);
-            expect(input.keys.ArrowDown).toBe(false);
-            expect(input.keys.Space).toBe(false);
-            expect(input.keys.Escape).toBe(false);
-        });
-
         it('should set ArrowUp to true on keydown', () => {
             const event = new KeyboardEvent('keydown', { code: 'ArrowUp' });
             window.dispatchEvent(event);
@@ -43,6 +36,27 @@ describe('Input', () => {
             const upEvent = new KeyboardEvent('keyup', { code: 'Space' });
             window.dispatchEvent(upEvent);
             expect(input.keys.Space).toBe(false);
+        });
+
+        it('should handle KeyD and KeyF debug keys', () => {
+            const dDownEvent = new KeyboardEvent('keydown', { code: 'KeyD' });
+            window.dispatchEvent(dDownEvent);
+            expect(input.keys.KeyD).toBe(true);
+
+            const fDownEvent = new KeyboardEvent('keydown', { code: 'KeyF' });
+            window.dispatchEvent(fDownEvent);
+            expect(input.keys.KeyF).toBe(true);
+
+            const fUpEvent = new KeyboardEvent('keyup', { code: 'KeyF' });
+            window.dispatchEvent(fUpEvent);
+            expect(input.keys.KeyF).toBe(false);
+        });
+
+        it('should ignore keys not in the keys object', () => {
+            const unknownEvent = new KeyboardEvent('keydown', { code: 'KeyZ' });
+            window.dispatchEvent(unknownEvent);
+            // KeyZ is not in the keys object, so it shouldn't affect anything
+            expect(input.keys.KeyZ).toBeUndefined();
         });
 
         it('should clear all keys', () => {

@@ -168,5 +168,55 @@ describe('Lives System', () => {
         // At 30 seconds: t = 30/60 = 0.5, interval = 3.0 - (3.0 - 1.0) * 0.5 = 3.0 - 1.0 = 2.0
         expect(playingState['asteroidTimer']).toBeCloseTo(2.0, 1);
     });
+
+    it('should handle game time subtraction when time is less than 60 seconds', () => {
+        playingState['gameTime'] = 30.0; // Less than 60 seconds
+        
+        playingState['startExplosion'](mockGame as any);
+        
+        // Should clamp to 0 (30 - 60 = -30, clamped to 0)
+        expect(playingState['gameTime']).toBe(0.0);
+    });
+
+    it('should handle game time subtraction at exactly 60 seconds', () => {
+        playingState['gameTime'] = 60.0;
+        
+        playingState['startExplosion'](mockGame as any);
+        
+        // Should become 0 (60 - 60 = 0)
+        expect(playingState['gameTime']).toBe(0.0);
+    });
+
+    it('should handle multiple consecutive deaths correctly', () => {
+        playingState.lives = 3;
+        playingState['gameTime'] = 200.0; // 200 seconds
+        
+        // First death
+        playingState['startExplosion'](mockGame as any);
+        expect(playingState.lives).toBe(2);
+        expect(playingState['gameTime']).toBe(140.0); // 200 - 60 = 140
+        
+        // Complete explosion and respawn
+        playingState.explosionTimer = 0;
+        playingState.particleManager.particles = [];
+        // Reset game time to expected value after update (update doesn't advance time during explosion)
+        playingState['gameTime'] = 140.0;
+        playingState.update(mockGame as any, 0.1);
+        
+        // Second death
+        playingState['startExplosion'](mockGame as any);
+        expect(playingState.lives).toBe(1);
+        // Account for any small time advancement during update
+        expect(playingState['gameTime']).toBeCloseTo(80.0, 1); // 140 - 60 = 80
+    });
+
+    it('should handle edge case when game time is exactly 0', () => {
+        playingState['gameTime'] = 0.0;
+        
+        playingState['startExplosion'](mockGame as any);
+        
+        // Should stay at 0 (0 - 60 = -60, clamped to 0)
+        expect(playingState['gameTime']).toBe(0.0);
+    });
 });
 

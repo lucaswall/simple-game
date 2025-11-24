@@ -39,7 +39,6 @@ describe('Ship Collision', () => {
             expect(bounds.centerY).toBe(100);
             expect(bounds.radius).toBe(SHIP_COLLISION_RADIUS);
         });
-
     });
 
     describe('canCollideWith', () => {

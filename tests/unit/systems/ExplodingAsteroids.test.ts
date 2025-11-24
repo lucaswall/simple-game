@@ -184,20 +184,34 @@ describe('Exploding Asteroids', () => {
         it('should destroy asteroids in explosion radius', () => {
             const explosionX = 400;
             const explosionY = 300;
-            const radius = ASTEROID_EXPLOSION_RADIUS_LARGE;
+            const radius = ASTEROID_EXPLOSION_RADIUS_LARGE; // 200
             
             // Create asteroids at different distances
+            // Asteroid1: 50 pixels away (well within 200 radius)
             const asteroid1 = new Asteroid(explosionX + 50, explosionY, AsteroidSize.SMALL, -300, 0, 0.1, undefined, false);
-            const asteroid2 = new Asteroid(explosionX + 200, explosionY, AsteroidSize.MEDIUM, -300, 0, 0.1, undefined, false);
+            // Asteroid2: 250 pixels away (outside 200 radius, but check includes asteroid radius ~15)
+            // So 250 < 200 + 15 = 215 is false, so asteroid2 should remain
+            const asteroid2 = new Asteroid(explosionX + 250, explosionY, AsteroidSize.MEDIUM, -300, 0, 0.1, undefined, false);
+            
+            // Ensure asteroids are active and collision enabled
+            asteroid1.active = true;
+            asteroid1.collisionEnabled = true;
+            asteroid2.active = true;
+            asteroid2.collisionEnabled = true;
             
             playingState.asteroids.push(asteroid1, asteroid2);
             
+            const initialAsteroidCount = playingState.asteroids.length;
+            
             playingState['handleExplosion'](explosionX, explosionY, radius, mockGame as any);
             
-            // Asteroid1 should be destroyed (within radius)
-            // Asteroid2 should remain (outside radius)
+            // Asteroid1 should be destroyed (within radius: 50 < 200 + 15)
             expect(asteroid1.active).toBe(false);
+            expect(asteroid1.collisionEnabled).toBe(false);
+            // Asteroid2 should remain (outside radius: 250 >= 200 + 25)
             expect(asteroid2.active).toBe(true);
+            // Asteroid1 should be removed from array by onAsteroidDestroyed callback
+            expect(playingState.asteroids.length).toBeLessThan(initialAsteroidCount);
         });
 
         it('should award points for asteroids destroyed by explosion', () => {

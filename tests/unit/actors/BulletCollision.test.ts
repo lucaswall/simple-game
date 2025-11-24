@@ -32,7 +32,6 @@ describe('Bullet Collision', () => {
             expect(bounds.centerY).toBe(150);
             expect(bounds.radius).toBe(5);
         });
-
     });
 
     describe('canCollideWith', () => {

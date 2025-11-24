@@ -39,5 +39,29 @@ describe('Starfield', () => {
             expect(movedLeft || wrappedAround).toBe(true);
         });
     });
+
+    it('should handle multiple wraps correctly', () => {
+        const star = starfield['stars'][0];
+        star.x = -100; // Way off screen
+        
+        starfield.update(0.1);
+        
+        // Should wrap to right side
+        expect(star.x).toBeGreaterThanOrEqual(0);
+        expect(star.x).toBeLessThanOrEqual(GAME_WIDTH);
+    });
+
+    it('should maintain star count after wrapping', () => {
+        const initialStarCount = starfield['stars'].length;
+        
+        // Force all stars to wrap
+        starfield['stars'].forEach(star => {
+            star.x = -10;
+        });
+        
+        starfield.update(0.1);
+        
+        expect(starfield['stars'].length).toBe(initialStarCount);
+    });
 });
 

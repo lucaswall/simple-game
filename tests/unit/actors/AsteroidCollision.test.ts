@@ -42,7 +42,6 @@ describe('Asteroid Collision', () => {
             expect(bounds.centerY).toBe(150);
             expect(bounds.radius).toBe(25);
         });
-
     });
 
     describe('canCollideWith', () => {

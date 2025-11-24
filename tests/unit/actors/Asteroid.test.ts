@@ -19,22 +19,18 @@ describe('Asteroid', () => {
             }
         });
 
-        it('should create medium asteroid with correct size', () => {
-            const asteroid = new Asteroid(200, 200, AsteroidSize.MEDIUM, -300, 0);
-            expect(asteroid.asteroidSize).toBe(AsteroidSize.MEDIUM);
-            expect(asteroid.size).toBe(ASTEROID_MEDIUM_SIZE);
-        });
-
-        it('should create small asteroid with correct size', () => {
-            const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
-            expect(asteroid.asteroidSize).toBe(AsteroidSize.SMALL);
-            expect(asteroid.size).toBe(ASTEROID_SMALL_SIZE);
-        });
-
-        it('should create large asteroid with correct size', () => {
-            const asteroid = new Asteroid(200, 200, AsteroidSize.LARGE, -300, 0);
-            expect(asteroid.asteroidSize).toBe(AsteroidSize.LARGE);
-            expect(asteroid.size).toBe(ASTEROID_LARGE_SIZE);
+        it('should create asteroids with correct sizes for each type', () => {
+            const mediumAsteroid = new Asteroid(200, 200, AsteroidSize.MEDIUM, -300, 0);
+            expect(mediumAsteroid.asteroidSize).toBe(AsteroidSize.MEDIUM);
+            expect(mediumAsteroid.size).toBe(ASTEROID_MEDIUM_SIZE);
+            
+            const smallAsteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
+            expect(smallAsteroid.asteroidSize).toBe(AsteroidSize.SMALL);
+            expect(smallAsteroid.size).toBe(ASTEROID_SMALL_SIZE);
+            
+            const largeAsteroid = new Asteroid(200, 200, AsteroidSize.LARGE, -300, 0);
+            expect(largeAsteroid.asteroidSize).toBe(AsteroidSize.LARGE);
+            expect(largeAsteroid.size).toBe(ASTEROID_LARGE_SIZE);
         });
 
         it('should have speed within valid range for default asteroid', () => {
@@ -101,6 +97,42 @@ describe('Asteroid', () => {
             const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0);
             asteroid.update(0.1);
             expect(asteroid.active).toBe(true);
+        });
+    });
+
+    describe('Exploding Asteroids', () => {
+        it('should initialize flash timer for exploding asteroids', () => {
+            const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0, 0.1, undefined, true);
+            expect(asteroid.isExploding).toBe(true);
+            expect(asteroid['flashTimer']).toBeGreaterThanOrEqual(0);
+            expect(asteroid['flashTimer']).toBeLessThan(0.2); // Should be less than flash interval
+        });
+
+        it('should not initialize flash timer for non-exploding asteroids', () => {
+            const asteroid = new Asteroid(200, 200, AsteroidSize.SMALL, -300, 0, 0.1, undefined, false);
+            expect(asteroid.isExploding).toBe(false);
+            // Flash timer is only initialized for exploding asteroids, so it should be 0
+            // But we need to check the actual implementation - if it's not initialized, it's 0
+            expect(asteroid['flashTimer']).toBe(0);
+        });
+
+        it('should update flash timer for exploding asteroids', () => {
+            const asteroid = new Asteroid(200, 200, AsteroidSize.MEDIUM, -300, 0, 0.1, undefined, true);
+            const initialFlashTimer = asteroid['flashTimer'];
+            
+            asteroid.update(0.1);
+            
+            expect(asteroid['flashTimer']).toBeGreaterThan(initialFlashTimer);
+        });
+
+        it('should wrap flash timer when it exceeds interval', () => {
+            const asteroid = new Asteroid(200, 200, AsteroidSize.LARGE, -300, 0, 0.1, undefined, true);
+            asteroid['flashTimer'] = 0.39; // Close to wrap threshold (0.2 * 2 = 0.4)
+            
+            asteroid.update(0.05); // Should wrap (0.39 + 0.05 = 0.44, wraps to 0)
+            
+            // Flash timer wraps when >= 0.4 (ASTEROID_FLASH_INTERVAL * 2)
+            expect(asteroid['flashTimer']).toBeLessThan(0.4);
         });
     });
 });

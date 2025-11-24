@@ -24,6 +24,20 @@ describe('Bullet', () => {
             bullet.update(0.1);
             expect(bullet.active).toBe(true);
         });
+
+        it('should handle zero deltaTime', () => {
+            const bullet = new Bullet(100, 200, BULLET_SPEED, 5);
+            const initialX = bullet.x;
+            bullet.update(0);
+            expect(bullet.x).toBe(initialX);
+        });
+
+        it('should handle very large deltaTime', () => {
+            const bullet = new Bullet(100, 200, BULLET_SPEED, 5);
+            bullet.update(10.0); // Very large deltaTime
+            // Should move far right and be deactivated
+            expect(bullet.active).toBe(false);
+        });
     });
 });
 
