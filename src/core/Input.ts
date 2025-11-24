@@ -4,7 +4,8 @@ export class Input {
         ArrowDown: false,
         Space: false,
         Escape: false,
-        KeyD: false
+        KeyD: false,
+        KeyF: false
     };
 
     private canvas: HTMLCanvasElement | null = null;

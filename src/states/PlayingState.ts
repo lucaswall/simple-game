@@ -107,6 +107,7 @@ export class PlayingState implements GameState {
     private gameTime: number = 0; // Total game time in seconds
     private debugMode: boolean = false;
     private debugKeyPressed: boolean = false; // Track if D key was pressed to toggle on keydown
+    private fastForwardKeyPressed: boolean = false; // Track if F key was pressed to advance time
 
     constructor(input: Input) {
         this.input = input;
@@ -130,6 +131,7 @@ export class PlayingState implements GameState {
         this.gameTime = 0;
         this.debugMode = false;
         this.debugKeyPressed = false;
+        this.fastForwardKeyPressed = false;
         // Reset ship position
         this.ship.x = SHIP_X_POSITION;
         this.ship.y = PLAY_AREA_HEIGHT / 2;
@@ -180,6 +182,14 @@ export class PlayingState implements GameState {
             this.debugKeyPressed = true;
         } else if (!this.input.keys.KeyD) {
             this.debugKeyPressed = false;
+        }
+
+        // Handle fast forward (advance game time by 20 seconds)
+        if (this.input.keys.KeyF && !this.fastForwardKeyPressed) {
+            this.gameTime += 20;
+            this.fastForwardKeyPressed = true;
+        } else if (!this.input.keys.KeyF) {
+            this.fastForwardKeyPressed = false;
         }
 
         // Update invincibility and blinking
