@@ -22,7 +22,7 @@ export class Asteroid implements Collidable {
     active: boolean = true;
     collisionEnabled: boolean = true;
 
-    constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number, largeRatio: number = 0.1) {
+    constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number, largeRatio: number = 0.1, angleOffsetDegrees?: number) {
         // Default constructor creates a random size asteroid at spawn position
         if (x === undefined || y === undefined || sizeType === undefined) {
             this.x = GAME_WIDTH;
@@ -49,8 +49,19 @@ export class Asteroid implements Collidable {
                 this.size = ASTEROID_LARGE_SIZE;
             }
             this.speed = Math.random() * (ASTEROID_MAX_SPEED - ASTEROID_MIN_SPEED) + ASTEROID_MIN_SPEED;
-            this.velocityX = -this.speed; // Moving left
-            this.velocityY = 0;
+            
+            // Apply angle offset if provided (for angled asteroids after 3 minutes)
+            if (angleOffsetDegrees !== undefined) {
+                const angleRadians = (angleOffsetDegrees * Math.PI) / 180;
+                // Base direction is left (180 degrees or π radians)
+                const baseAngle = Math.PI;
+                const finalAngle = baseAngle + angleRadians;
+                this.velocityX = Math.cos(finalAngle) * this.speed;
+                this.velocityY = Math.sin(finalAngle) * this.speed;
+            } else {
+                this.velocityX = -this.speed; // Moving left
+                this.velocityY = 0;
+            }
         } else {
             // Constructor for split asteroids
             this.x = x;

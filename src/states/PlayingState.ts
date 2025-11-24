@@ -377,7 +377,15 @@ export class PlayingState implements GameState {
         // Spawn asteroids
         this.asteroidTimer -= deltaTime;
         if (this.asteroidTimer <= 0) {
-            this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio));
+            // After 3 minutes, 50% of asteroids spawn with random angle (0-10 degrees)
+            let angleOffset: number | undefined = undefined;
+            if (this.gameTime >= 180) {
+                if (Math.random() < 0.5) {
+                    // Random angle between 0 and 10 degrees
+                    angleOffset = Math.random() * 10;
+                }
+            }
+            this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio, angleOffset));
             this.asteroidTimer = currentSpawnInterval;
         }
 
