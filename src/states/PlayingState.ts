@@ -422,6 +422,10 @@ export class PlayingState implements GameState {
         // Start invincibility period
         this.invincibilityTimer = INVINCIBILITY_DURATION;
         this.blinkTimer = 0;
+        
+        // Reset debug key states
+        this.fastForwardKeyPressed = false;
+        this.debugKeyPressed = false;
     }
 
     private drawHeatBar(ctx: CanvasRenderingContext2D): void {
@@ -531,6 +535,12 @@ export class PlayingState implements GameState {
         } else {
             // After 180 seconds: stay at 0.25
             currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_3MIN;
+        }
+        
+        // If asteroidTimer is significantly out of sync with current spawn interval (more than 2x),
+        // reset it to prevent desync after fast forward or time changes
+        if (this.asteroidTimer > currentSpawnInterval * 2) {
+            this.asteroidTimer = currentSpawnInterval;
         }
         
         // Calculate dynamic large asteroid ratio based on game time
