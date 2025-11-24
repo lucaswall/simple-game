@@ -48,6 +48,16 @@ export const ASTEROID_LARGE_SPLIT_ANGLE_MAX = 10; // Maximum split angle for lar
 export const ASTEROID_MEDIUM_SPLIT_ANGLE_MIN = 10; // Minimum split angle for medium->small in degrees
 export const ASTEROID_MEDIUM_SPLIT_ANGLE_MAX = 30; // Maximum split angle for medium->small in degrees
 
+// Exploding asteroid constants
+export const ASTEROID_EXPLOSION_RADIUS_SMALL = 60; // Explosion radius for small exploding asteroids
+export const ASTEROID_EXPLOSION_RADIUS_MEDIUM = 100; // Explosion radius for medium exploding asteroids
+export const ASTEROID_EXPLOSION_RADIUS_LARGE = 150; // Explosion radius for large exploding asteroids
+export const ASTEROID_FLASH_INTERVAL = 0.2; // Seconds between red flashes
+export const ASTEROID_EXPLODING_CHANCE_START = 0.1; // 1 in 10 chance at 1 minute
+export const ASTEROID_EXPLODING_CHANCE_END = 0.2; // 2 in 10 chance at 3 minutes
+export const ASTEROID_EXPLODING_START_TIME = 60; // Seconds - when exploding asteroids start appearing
+export const ASTEROID_EXPLODING_RAMP_TIME = 180; // Seconds - time to reach max chance (3 minutes)
+
 // Particle constants (used only in gameplay)
 export const PARTICLE_COUNT_PER_EXPLOSION = 30;
 export const PARTICLE_MIN_SPEED = 50;
@@ -257,11 +267,80 @@ export class PlayingState implements GameState {
             },
             onShipDestroyed: () => {
                 this.startExplosion(game);
+            },
+            onExplosion: (x: number, y: number, radius: number) => {
+                this.handleExplosion(x, y, radius, game);
             }
         };
 
         // Check collisions
         CollisionManager.checkCollisions(collidables, context);
+    }
+
+    private handleExplosion(explosionX: number, explosionY: number, radius: number, game: Game): void {
+        // Check if ship is in explosion radius
+        const shipBounds = this.ship.getCollisionBounds();
+        const shipCenterX = shipBounds.centerX ?? 0;
+        const shipCenterY = shipBounds.centerY ?? 0;
+        const shipRadius = shipBounds.radius ?? 0;
+        
+        const dx = explosionX - shipCenterX;
+        const dy = explosionY - shipCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < radius + shipRadius && this.ship.collisionEnabled && this.invincibilityTimer <= 0) {
+            // Ship is in explosion radius - destroy it
+            this.ship.collisionEnabled = false;
+            this.startExplosion(game);
+        }
+        
+        // Check all asteroids in explosion radius
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = this.asteroids[i];
+            if (!asteroid.active || !asteroid.collisionEnabled) continue;
+            
+            const asteroidBounds = asteroid.getCollisionBounds();
+            const asteroidCenterX = asteroidBounds.centerX ?? 0;
+            const asteroidCenterY = asteroidBounds.centerY ?? 0;
+            const asteroidRadius = asteroidBounds.radius ?? 0;
+            
+            const astDx = explosionX - asteroidCenterX;
+            const astDy = explosionY - asteroidCenterY;
+            const astDistance = Math.sqrt(astDx * astDx + astDy * astDy);
+            
+            if (astDistance < radius + asteroidRadius) {
+                // Asteroid is in explosion radius - destroy it as if hit by bullet
+                // Create a real bullet instance for collision (position doesn't matter, just needs to be instanceof Bullet)
+                const fakeBullet = new Bullet(asteroid.x, asteroid.y, 0, 0);
+                asteroid.onCollision(fakeBullet, {
+                    game: game,
+                    particleManager: this.particleManager,
+                    onAsteroidDestroyed: (ast: import('../interfaces/Actor').Actor) => {
+                        const a = ast as Asteroid;
+                        if (a.asteroidSize === AsteroidSize.SMALL) {
+                            this.score += ASTEROID_SMALL_POINTS;
+                        }
+                        const index = this.asteroids.indexOf(a);
+                        if (index !== -1) {
+                            this.asteroids.splice(index, 1);
+                        }
+                    },
+                    onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
+                        const parent = parentAsteroid as Asteroid;
+                        if (parent.asteroidSize === AsteroidSize.LARGE) {
+                            this.score += ASTEROID_LARGE_POINTS;
+                        } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
+                            this.score += ASTEROID_MEDIUM_POINTS;
+                        }
+                        const index = this.asteroids.indexOf(parent);
+                        if (index !== -1) {
+                            this.asteroids.splice(index, 1);
+                        }
+                        this.asteroids.push(...(newAsteroids as Asteroid[]));
+                    }
+                });
+            }
+        }
     }
 
     draw(_game: Game, ctx: CanvasRenderingContext2D): void {
@@ -473,7 +552,18 @@ export class PlayingState implements GameState {
                     angleOffset = Math.random() * maxAngle;
                 }
             }
-            this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio, angleOffset));
+            
+            // Determine if this asteroid should be exploding
+            let isExploding = false;
+            if (this.gameTime >= ASTEROID_EXPLODING_START_TIME) {
+                // Calculate exploding asteroid chance (linear from 10% at 1min to 20% at 3min)
+                const explodingProgress = Math.min((this.gameTime - ASTEROID_EXPLODING_START_TIME) / (ASTEROID_EXPLODING_RAMP_TIME - ASTEROID_EXPLODING_START_TIME), 1.0);
+                const explodingChance = ASTEROID_EXPLODING_CHANCE_START + 
+                    (ASTEROID_EXPLODING_CHANCE_END - ASTEROID_EXPLODING_CHANCE_START) * explodingProgress;
+                isExploding = Math.random() < explodingChance;
+            }
+            
+            this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio, angleOffset, isExploding));
             this.asteroidTimer = currentSpawnInterval;
         }
 

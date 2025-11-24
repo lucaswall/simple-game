@@ -21,6 +21,7 @@ export interface CollisionContext {
     onAsteroidDestroyed?: (asteroid: Actor) => void;
     onAsteroidSplit?: (parentAsteroid: Actor, newAsteroids: Actor[]) => void;
     onShipDestroyed?: () => void;
+    onExplosion?: (x: number, y: number, radius: number) => void; // Called when an exploding asteroid explodes
 }
 
 export interface Collidable extends Actor {
