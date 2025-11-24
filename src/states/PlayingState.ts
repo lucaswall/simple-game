@@ -12,8 +12,8 @@ import { GameOverState } from './GameOverState';
 // Gameplay-specific constants
 const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
 const HIT_FREEZE_DURATION = 0.1; // Seconds
-const SHIP_COLLISION_X = 75; // X position for collision detection
-const SHIP_COLLISION_RADIUS = 15; // Collision radius
+export const SHIP_COLLISION_X = 75; // X position for collision detection
+export const SHIP_COLLISION_RADIUS = 15; // Collision radius
 const SHAKE_INTENSITY_SHIP_HIT = 20;
 const SHAKE_INTENSITY_ASTEROID_HIT = 10;
 const ASTEROID_HIT_FREEZE_DURATION = 0.05; // Seconds
@@ -53,11 +53,11 @@ export const BULLET_SPEED = 800; // Pixels per second
 export const BULLET_SIZE = 5; // Radius
 
 // Score constants
-const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
+export const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
 
 // Lives constants
-const STARTING_LIVES = 3;
-const INVINCIBILITY_DURATION = 3.0; // Seconds
+export const STARTING_LIVES = 3;
+export const INVINCIBILITY_DURATION = 3.0; // Seconds
 const BLINK_INTERVAL = 0.1; // Seconds between blinks
 
 // Play area (gameplay area below UI)
@@ -71,10 +71,10 @@ export class PlayingState implements GameState {
     bullets: Bullet[] = [];
     particleManager: ParticleManager;
     asteroidTimer: number = 0;
-    private explosionTimer: number = 0;
+    explosionTimer: number = 0; // Made public for testing
     score: number = 0;
     lives: number = STARTING_LIVES;
-    private invincibilityTimer: number = 0;
+    invincibilityTimer: number = 0; // Made public for testing
     private blinkTimer: number = 0;
 
     constructor(input: Input) {
