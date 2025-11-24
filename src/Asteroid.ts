@@ -1,14 +1,17 @@
-import { Actor } from './interfaces/Actor';
+import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
 import { GAME_WIDTH } from './Constants';
-import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT } from './states/PlayingState';
+import { Bullet } from './Bullet';
+import { Ship } from './Ship';
+import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION } from './states/PlayingState';
 
-export class Asteroid implements Actor {
+export class Asteroid implements Collidable {
     x: number;
     y: number;
     size: number;
     speed: number;
     vertices: { x: number; y: number }[] = [];
     active: boolean = true;
+    collisionEnabled: boolean = true;
 
     constructor() {
         this.x = GAME_WIDTH;
@@ -45,5 +48,46 @@ export class Asteroid implements Actor {
         }
         ctx.closePath();
         ctx.fill();
+    }
+
+    getCollisionBounds(): CollisionBounds {
+        return {
+            type: 'circle',
+            centerX: this.x,
+            centerY: this.y,
+            radius: this.size
+        };
+    }
+
+    canCollideWith(other: Collidable): boolean {
+        return this.active && 
+               this.collisionEnabled &&
+               (other instanceof Ship || other instanceof Bullet);
+    }
+
+    onCollision(other: Collidable, context: CollisionContext): void {
+        if (other instanceof Bullet) {
+            // Mark asteroid as inactive
+            this.active = false;
+            this.collisionEnabled = false;
+            
+            // Create explosion effect
+            context.particleManager.createExplosion(this.x, this.y, ASTEROID_COLOR);
+            
+            // Mark bullet as inactive (it will be removed by its own logic)
+            (other as Bullet).active = false;
+            
+            // Notify context about asteroid destruction
+            if (context.onAsteroidDestroyed) {
+                context.onAsteroidDestroyed(this);
+            }
+            
+            // Apply screen shake and freeze
+            context.game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
+            context.game.startFreeze(ASTEROID_HIT_FREEZE_DURATION, () => {
+                // Freeze just provides visual feedback
+            });
+        }
+        // Ship collision is handled by Ship.onCollision
     }
 }

@@ -8,15 +8,17 @@ import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
 import { SHIP_X_POSITION, UI_HEIGHT, GAME_HEIGHT } from '../Constants';
 import { GameOverState } from './GameOverState';
+import { CollisionManager } from '../utils/CollisionManager';
+import { CollisionContext, Collidable } from '../interfaces/Collidable';
 
 // Gameplay-specific constants
 const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
-const HIT_FREEZE_DURATION = 0.1; // Seconds
+export const HIT_FREEZE_DURATION = 0.1; // Seconds
 export const SHIP_COLLISION_X = 75; // X position for collision detection
 export const SHIP_COLLISION_RADIUS = 15; // Collision radius
-const SHAKE_INTENSITY_SHIP_HIT = 20;
-const SHAKE_INTENSITY_ASTEROID_HIT = 10;
-const ASTEROID_HIT_FREEZE_DURATION = 0.05; // Seconds
+export const SHAKE_INTENSITY_SHIP_HIT = 20;
+export const SHAKE_INTENSITY_ASTEROID_HIT = 10;
+export const ASTEROID_HIT_FREEZE_DURATION = 0.05; // Seconds
 const EXPLOSION_DURATION = 1.0; // Seconds
 const EXPLOSION_TIME_SCALE = 1 / 3; // Time scale during explosion (1/3 = slower)
 
@@ -158,6 +160,42 @@ export class PlayingState implements GameState {
         this.checkCollisions(game);
     }
 
+    private checkCollisions(game: Game): void {
+        // Skip all collision checks if ship collisions are disabled or ship is invincible
+        if (!this.ship.collisionEnabled || this.invincibilityTimer > 0) {
+            return;
+        }
+
+        // Build list of collidables
+        const collidables: Collidable[] = [];
+        if (this.ship.visible && this.ship.collisionEnabled) {
+            collidables.push(this.ship);
+        }
+        collidables.push(...this.asteroids.filter(a => a.active && a.collisionEnabled));
+        collidables.push(...this.bullets.filter(b => b.active && b.collisionEnabled));
+
+        // Create collision context
+        const context: CollisionContext = {
+            game: game,
+            particleManager: this.particleManager,
+            onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
+                // Award points for destroying asteroid
+                this.score += ASTEROID_POINTS;
+                // Remove asteroid from array
+                const index = this.asteroids.indexOf(asteroid as Asteroid);
+                if (index !== -1) {
+                    this.asteroids.splice(index, 1);
+                }
+            },
+            onShipDestroyed: () => {
+                this.startExplosion(game);
+            }
+        };
+
+        // Check collisions
+        CollisionManager.checkCollisions(collidables, context);
+    }
+
     draw(_game: Game, ctx: CanvasRenderingContext2D): void {
         // Draw UI area background
         ctx.fillStyle = '#000';
@@ -265,55 +303,4 @@ export class PlayingState implements GameState {
         }
     }
 
-    private checkCollisions(game: Game) {
-        // Skip all collision checks if ship collisions are disabled or ship is invincible
-        if (!this.ship.collisionEnabled || this.invincibilityTimer > 0) {
-            return;
-        }
-
-        for (let i = this.asteroids.length - 1; i >= 0; i--) {
-            const asteroid = this.asteroids[i];
-
-            // Ship Collision
-            if (this.ship.visible) {
-                const shipCollisionX = this.ship.x - (SHIP_X_POSITION - SHIP_COLLISION_X);
-                const dx = asteroid.x - shipCollisionX;
-                const dy = asteroid.y - this.ship.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < asteroid.size + SHIP_COLLISION_RADIUS) {
-                    // Disable collisions to prevent repeated collision detection
-                    this.ship.collisionEnabled = false;
-                    game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
-                    game.startFreeze(HIT_FREEZE_DURATION, () => {
-                        this.startExplosion(game);
-                    });
-                    return;
-                }
-            }
-
-            // Bullet Collision
-            for (let j = this.bullets.length - 1; j >= 0; j--) {
-                const bullet = this.bullets[j];
-                const dx = asteroid.x - bullet.x;
-                const dy = asteroid.y - bullet.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < asteroid.size + bullet.size) {
-                    this.particleManager.createExplosion(asteroid.x, asteroid.y, ASTEROID_COLOR);
-                    this.asteroids.splice(i, 1);
-                    this.bullets.splice(j, 1);
-                    
-                    // Award points for destroying asteroid
-                    this.score += ASTEROID_POINTS;
-
-                    game.shakeIntensity = SHAKE_INTENSITY_ASTEROID_HIT;
-                    game.startFreeze(ASTEROID_HIT_FREEZE_DURATION, () => {
-                        // Stay in playing state, freeze just provides visual feedback
-                    });
-                    break;
-                }
-            }
-        }
-    }
 }

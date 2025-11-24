@@ -1,10 +1,11 @@
-import { Actor } from './interfaces/Actor';
+import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
 import { Input } from './Input';
 import { Bullet } from './Bullet';
+import { Asteroid } from './Asteroid';
 import { SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from './Constants';
-import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE, PLAY_AREA_HEIGHT } from './states/PlayingState';
+import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE, PLAY_AREA_HEIGHT, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, HIT_FREEZE_DURATION } from './states/PlayingState';
 
-export class Ship implements Actor {
+export class Ship implements Collidable {
     x: number = SHIP_X_POSITION;
     y: number = PLAY_AREA_HEIGHT / 2;
     private input: Input;
@@ -54,5 +55,33 @@ export class Ship implements Actor {
         ctx.lineTo(this.x - (SHIP_X_POSITION - SHIP_BACK_X_POSITION), this.y + SHIP_SIZE / 2); // Bottom back
         ctx.closePath();
         ctx.fill();
+    }
+
+    getCollisionBounds(): CollisionBounds {
+        return {
+            type: 'circle',
+            centerX: this.x - (SHIP_X_POSITION - SHIP_COLLISION_X),
+            centerY: this.y,
+            radius: SHIP_COLLISION_RADIUS
+        };
+    }
+
+    canCollideWith(other: Collidable): boolean {
+        return this.collisionEnabled && 
+               this.visible && 
+               other instanceof Asteroid;
+    }
+
+    onCollision(other: Collidable, context: CollisionContext): void {
+        if (other instanceof Asteroid) {
+            // Disable collisions to prevent repeated collision detection
+            this.collisionEnabled = false;
+            context.game.shakeIntensity = SHAKE_INTENSITY_SHIP_HIT;
+            context.game.startFreeze(HIT_FREEZE_DURATION, () => {
+                if (context.onShipDestroyed) {
+                    context.onShipDestroyed();
+                }
+            });
+        }
     }
 }

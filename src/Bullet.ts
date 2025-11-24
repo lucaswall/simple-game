@@ -1,12 +1,14 @@
-import { Actor } from './interfaces/Actor';
+import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
+import { Asteroid } from './Asteroid';
 import { GAME_WIDTH } from './Constants';
 
-export class Bullet implements Actor {
+export class Bullet implements Collidable {
     x: number;
     y: number;
     speed: number;
     size: number;
     active: boolean = true;
+    collisionEnabled: boolean = true;
 
     constructor(x: number, y: number, speed: number, size: number) {
         this.x = x;
@@ -27,5 +29,28 @@ export class Bullet implements Actor {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    getCollisionBounds(): CollisionBounds {
+        return {
+            type: 'circle',
+            centerX: this.x,
+            centerY: this.y,
+            radius: this.size
+        };
+    }
+
+    canCollideWith(other: Collidable): boolean {
+        return this.active && 
+               this.collisionEnabled && 
+               other instanceof Asteroid;
+    }
+
+    onCollision(other: Collidable, _context: CollisionContext): void {
+        if (other instanceof Asteroid) {
+            // Bullet collision is handled by Asteroid.onCollision
+            // Just mark bullet as inactive
+            this.active = false;
+        }
     }
 }
