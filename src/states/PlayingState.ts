@@ -12,7 +12,11 @@ import { CollisionManager } from '../managers/CollisionManager';
 import { CollisionContext, Collidable } from '../interfaces/Collidable';
 
 // Gameplay-specific constants
-const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
+const ASTEROID_SPAWN_INTERVAL_START = 3.0; // Seconds - starting spawn interval
+const ASTEROID_SPAWN_INTERVAL_END = 1.0; // Seconds - spawn interval at 3 minutes
+const ASTEROID_SPAWN_RAMP_TIME = 180.0; // Seconds - time to reach max spawn rate (3 minutes)
+const ASTEROID_LARGE_RATIO_START = 0.1; // Starting large asteroid ratio (10%)
+const ASTEROID_LARGE_RATIO_END = 0.5; // Large asteroid ratio at 3 minutes (50%)
 export const HIT_FREEZE_DURATION = 0.1; // Seconds
 export const SHIP_COLLISION_X = 75; // X position for collision detection
 export const SHIP_COLLISION_RADIUS = 15; // Collision radius
@@ -87,6 +91,9 @@ export class PlayingState implements GameState {
     lives: number = STARTING_LIVES;
     invincibilityTimer: number = 0; // Made public for testing
     private blinkTimer: number = 0;
+    private gameTime: number = 0; // Total game time in seconds
+    private debugMode: boolean = false;
+    private debugKeyPressed: boolean = false; // Track if D key was pressed to toggle on keydown
 
     constructor(input: Input) {
         this.input = input;
@@ -106,14 +113,22 @@ export class PlayingState implements GameState {
         this.lives = STARTING_LIVES;
         this.invincibilityTimer = 0;
         this.blinkTimer = 0;
+        this.gameTime = 0;
+        this.debugMode = false;
+        this.debugKeyPressed = false;
         // Reset ship position
         this.ship.x = SHIP_X_POSITION;
         this.ship.y = PLAY_AREA_HEIGHT / 2;
-        // Start asteroid timer
-        this.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
+        // Start asteroid timer with initial spawn interval
+        this.asteroidTimer = ASTEROID_SPAWN_INTERVAL_START;
     }
 
     update(game: Game, deltaTime: number): void {
+        // Update game time (only when not in explosion state)
+        if (this.explosionTimer <= 0) {
+            this.gameTime += deltaTime;
+        }
+        
         // Handle explosion state
         if (this.explosionTimer > 0) {
             // `deltaTime` is already scaled by Game.timeScale (slow motion during explosion).
@@ -139,6 +154,14 @@ export class PlayingState implements GameState {
                 }
             }
             return;
+        }
+
+        // Handle debug toggle
+        if (this.input.keys.KeyD && !this.debugKeyPressed) {
+            this.debugMode = !this.debugMode;
+            this.debugKeyPressed = true;
+        } else if (!this.input.keys.KeyD) {
+            this.debugKeyPressed = false;
         }
 
         // Update invincibility and blinking
@@ -239,6 +262,11 @@ export class PlayingState implements GameState {
         // Draw lives icons in top right
         this.drawLives(ctx);
         
+        // Draw debug overlay if enabled
+        if (this.debugMode) {
+            this.drawDebugOverlay(ctx);
+        }
+        
         // Translate to gameplay area
         ctx.save();
         ctx.translate(0, UI_HEIGHT);
@@ -261,6 +289,7 @@ export class PlayingState implements GameState {
         this.ship.visible = false;
         this.ship.collisionEnabled = false;
         this.lives--;
+        this.gameTime = 0; // Reset game time when a life is lost
         this.explosionTimer = EXPLOSION_DURATION;
 
         // Enter global slow motion for the duration of the explosion sequence.
@@ -315,11 +344,21 @@ export class PlayingState implements GameState {
     }
 
     private updateAsteroids(deltaTime: number) {
+        // Calculate dynamic spawn interval based on game time
+        const spawnIntervalProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
+        const currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
+            (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_END) * spawnIntervalProgress;
+        
+        // Calculate dynamic large asteroid ratio based on game time
+        const largeRatioProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
+        const currentLargeRatio = ASTEROID_LARGE_RATIO_START + 
+            (ASTEROID_LARGE_RATIO_END - ASTEROID_LARGE_RATIO_START) * largeRatioProgress;
+        
         // Spawn asteroids
         this.asteroidTimer -= deltaTime;
         if (this.asteroidTimer <= 0) {
-            this.asteroids.push(new Asteroid());
-            this.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
+            this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio));
+            this.asteroidTimer = currentSpawnInterval;
         }
 
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
@@ -329,6 +368,61 @@ export class PlayingState implements GameState {
                 this.asteroids.splice(i, 1);
             }
         }
+    }
+
+    private drawDebugOverlay(ctx: CanvasRenderingContext2D): void {
+        // Calculate current spawn rate and asteroid chances
+        const spawnIntervalProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
+        const currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
+            (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_END) * spawnIntervalProgress;
+        const spawnRate = 1.0 / currentSpawnInterval; // Asteroids per second
+        
+        const largeRatioProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
+        const currentLargeRatio = ASTEROID_LARGE_RATIO_START + 
+            (ASTEROID_LARGE_RATIO_END - ASTEROID_LARGE_RATIO_START) * largeRatioProgress;
+        
+        const remainingRatio = 1.0 - currentLargeRatio;
+        const smallMediumRatio = 4.0 / 9.0; // 4/(4+5) = small portion of remaining
+        const smallChance = remainingRatio * smallMediumRatio;
+        const mediumChance = remainingRatio * (1.0 - smallMediumRatio);
+        const largeChance = currentLargeRatio;
+        
+        // Format time
+        const minutes = Math.floor(this.gameTime / 60);
+        const seconds = Math.floor(this.gameTime % 60);
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Draw debug panel background - positioned at bottom right
+        const padding = 10;
+        const lineHeight = 20;
+        const panelWidth = 250;
+        const panelHeight = 100;
+        const x = ctx.canvas.width - panelWidth - padding;
+        const y = ctx.canvas.height - panelHeight - padding;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(x, y, panelWidth, panelHeight);
+        
+        ctx.strokeStyle = '#0f0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, panelWidth, panelHeight);
+        
+        // Draw debug text
+        ctx.fillStyle = '#0f0';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        
+        let textY = y + 5;
+        ctx.fillText(`Play Time: ${timeString}`, x + 5, textY);
+        textY += lineHeight;
+        ctx.fillText(`Spawn Rate: ${spawnRate.toFixed(2)}/s`, x + 5, textY);
+        textY += lineHeight;
+        ctx.fillText(`Small: ${(smallChance * 100).toFixed(1)}%`, x + 5, textY);
+        textY += lineHeight;
+        ctx.fillText(`Medium: ${(mediumChance * 100).toFixed(1)}%`, x + 5, textY);
+        textY += lineHeight;
+        ctx.fillText(`Large: ${(largeChance * 100).toFixed(1)}%`, x + 5, textY);
     }
 
 }

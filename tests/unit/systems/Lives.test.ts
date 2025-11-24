@@ -107,5 +107,29 @@ describe('Lives System', () => {
         playingState.enter(mockGame as any);
         expect(playingState.lives).toBe(STARTING_LIVES);
     });
+
+    it('should reset game time when a life is lost', () => {
+        playingState['gameTime'] = 100.0;
+        playingState['startExplosion'](mockGame as any);
+        
+        expect(playingState['gameTime']).toBe(0);
+    });
+
+    it('should reset spawn interval when game time resets after life loss', () => {
+        // Advance game time to increase spawn rate
+        playingState['gameTime'] = 90.0; // 1.5 minutes - spawn interval should be 2.0
+        playingState['asteroidTimer'] = 0;
+        playingState['updateAsteroids'](0.1);
+        expect(playingState['asteroidTimer']).toBeCloseTo(2.0, 1);
+        
+        // Lose a life - game time should reset
+        playingState['startExplosion'](mockGame as any);
+        expect(playingState['gameTime']).toBe(0);
+        
+        // Next spawn should use initial interval (3.0)
+        playingState['asteroidTimer'] = 0;
+        playingState['updateAsteroids'](0.1);
+        expect(playingState['asteroidTimer']).toBeCloseTo(3.0, 1);
+    });
 });
 

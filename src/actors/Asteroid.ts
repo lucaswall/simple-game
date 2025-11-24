@@ -22,18 +22,26 @@ export class Asteroid implements Collidable {
     active: boolean = true;
     collisionEnabled: boolean = true;
 
-    constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number) {
+    constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number, largeRatio: number = 0.1) {
         // Default constructor creates a random size asteroid at spawn position
         if (x === undefined || y === undefined || sizeType === undefined) {
             this.x = GAME_WIDTH;
             this.y = Math.random() * (PLAY_AREA_HEIGHT - ASTEROID_SPAWN_Y_MARGIN) + ASTEROID_SPAWN_Y_OFFSET;
-            // Randomly choose between small, medium, and large
-            // Spawn ratio: 40% small, 50% medium, 10% large
+            // Randomly choose between small, medium, and large based on dynamic ratio
+            // largeRatio determines the percentage of large asteroids (starts at 10%, goes to 50%)
+            // Remaining asteroids maintain the 4:5 ratio between small and medium
+            // Start: small=40%, medium=50%, large=10% (4:5:1 ratio)
+            // End: small=22.22%, medium=27.78%, large=50% (maintains 4:5 ratio for small:medium)
             const rand = Math.random();
-            if (rand < 0.4) {
+            const remainingRatio = 1.0 - largeRatio;
+            const smallMediumRatio = 4.0 / 9.0; // 4/(4+5) = small portion of remaining
+            const smallRatio = remainingRatio * smallMediumRatio;
+            const mediumRatio = remainingRatio * (1.0 - smallMediumRatio);
+            
+            if (rand < smallRatio) {
                 this.asteroidSize = AsteroidSize.SMALL;
                 this.size = ASTEROID_SMALL_SIZE;
-            } else if (rand < 0.9) {
+            } else if (rand < smallRatio + mediumRatio) {
                 this.asteroidSize = AsteroidSize.MEDIUM;
                 this.size = ASTEROID_MEDIUM_SIZE;
             } else {

@@ -7,11 +7,11 @@ export class MockInput extends Input {
     }
 
     // Helper methods for test control
-    pressKey(key: 'ArrowUp' | 'ArrowDown' | 'Space' | 'Escape'): void {
+    pressKey(key: 'ArrowUp' | 'ArrowDown' | 'Space' | 'Escape' | 'KeyD'): void {
         this.keys[key] = true;
     }
 
-    releaseKey(key: 'ArrowUp' | 'ArrowDown' | 'Space' | 'Escape'): void {
+    releaseKey(key: 'ArrowUp' | 'ArrowDown' | 'Space' | 'Escape' | 'KeyD'): void {
         this.keys[key] = false;
     }
 
@@ -20,6 +20,7 @@ export class MockInput extends Input {
         this.keys.ArrowDown = true;
         this.keys.Space = true;
         this.keys.Escape = true;
+        this.keys.KeyD = true;
     }
 
     releaseAllKeys(): void {
@@ -27,6 +28,7 @@ export class MockInput extends Input {
         this.keys.ArrowDown = false;
         this.keys.Space = false;
         this.keys.Escape = false;
+        this.keys.KeyD = false;
     }
 }
 

@@ -3,7 +3,8 @@ export class Input {
         ArrowUp: false,
         ArrowDown: false,
         Space: false,
-        Escape: false
+        Escape: false,
+        KeyD: false
     };
 
     private canvas: HTMLCanvasElement | null = null;
