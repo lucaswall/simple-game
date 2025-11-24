@@ -1,19 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Starfield } from '../../../src/core/Starfield';
 import { GAME_WIDTH } from '../../../src/core/Constants';
-import { PLAY_AREA_HEIGHT } from '../../../src/states/PlayingState';
 
 describe('Starfield', () => {
     let starfield: Starfield;
-    let canvas: HTMLCanvasElement;
-    let ctx: CanvasRenderingContext2D;
 
     beforeEach(() => {
         starfield = new Starfield();
-        canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        ctx = canvas.getContext('2d')!;
     });
 
     it('should move stars left over time', () => {
