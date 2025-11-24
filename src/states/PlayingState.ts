@@ -377,12 +377,25 @@ export class PlayingState implements GameState {
         // Spawn asteroids
         this.asteroidTimer -= deltaTime;
         if (this.asteroidTimer <= 0) {
-            // After 3 minutes, 50% of asteroids spawn with random angle (0-10 degrees)
+            // Ramp up angled asteroids: 0-5° at 1min, 0-10° at 2min, 0-20° at 3min
             let angleOffset: number | undefined = undefined;
-            if (this.gameTime >= 180) {
+            if (this.gameTime >= 60) {
                 if (Math.random() < 0.5) {
-                    // Random angle between 0 and 10 degrees
-                    angleOffset = Math.random() * 10;
+                    let maxAngle: number;
+                    if (this.gameTime <= 120) {
+                        // From 60 to 120 seconds: linear ramp from 5 to 10 degrees max
+                        const t = (this.gameTime - 60) / 60.0;
+                        maxAngle = 5 + (10 - 5) * t;
+                    } else if (this.gameTime <= 180) {
+                        // From 120 to 180 seconds: linear ramp from 10 to 20 degrees max
+                        const t = (this.gameTime - 120) / 60.0;
+                        maxAngle = 10 + (20 - 10) * t;
+                    } else {
+                        // After 180 seconds: stay at 20 degrees max
+                        maxAngle = 20;
+                    }
+                    // Random angle between 0 and maxAngle degrees (always starts from 0)
+                    angleOffset = Math.random() * maxAngle;
                 }
             }
             this.asteroids.push(new Asteroid(undefined, undefined, undefined, undefined, undefined, currentLargeRatio, angleOffset));

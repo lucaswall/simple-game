@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayingState } from '../../../src/states/PlayingState';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { Asteroid } from '../../../src/actors/Asteroid';
 
 describe('Angled Asteroids', () => {
     let playingState: PlayingState;
@@ -16,8 +15,8 @@ describe('Angled Asteroids', () => {
         playingState.enter(mockGame as any);
     });
 
-    it('should spawn asteroids with straight trajectory before 3 minutes', () => {
-        playingState['gameTime'] = 179.0; // Just before 3 minutes
+    it('should spawn asteroids with straight trajectory before 1 minute', () => {
+        playingState['gameTime'] = 59.0; // Just before 1 minute
         playingState['asteroidTimer'] = 0;
         
         // Spawn multiple asteroids and check they all have velocityY = 0
@@ -31,8 +30,8 @@ describe('Angled Asteroids', () => {
         }
     });
 
-    it('should spawn 50% of asteroids with angles after 3 minutes', () => {
-        playingState['gameTime'] = 180.0; // At 3 minutes
+    it('should spawn 50% of asteroids with angles after 1 minute', () => {
+        playingState['gameTime'] = 60.0; // At 1 minute
         playingState['asteroidTimer'] = 0;
         
         let angledCount = 0;
@@ -58,7 +57,67 @@ describe('Angled Asteroids', () => {
         expect(angledRatio).toBeLessThan(0.6);
     });
 
-    it('should spawn angled asteroids with angles between 0 and 10 degrees', () => {
+    it('should spawn angled asteroids with 0-5 degrees at 1 minute', () => {
+        playingState['gameTime'] = 60.0; // At 1 minute
+        playingState['asteroidTimer'] = 0;
+        
+        const samples = 50;
+        const angles: number[] = [];
+        
+        for (let i = 0; i < samples; i++) {
+            playingState['asteroidTimer'] = 0;
+            playingState['updateAsteroids'](0.1);
+            const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
+            
+            if (Math.abs(lastAsteroid.velocityY) > 0.001) {
+                const angleRadians = Math.atan2(lastAsteroid.velocityY, lastAsteroid.velocityX);
+                const baseAngleRadians = Math.PI;
+                let angleOffsetRadians = angleRadians - baseAngleRadians;
+                while (angleOffsetRadians > Math.PI) angleOffsetRadians -= 2 * Math.PI;
+                while (angleOffsetRadians < -Math.PI) angleOffsetRadians += 2 * Math.PI;
+                const angleOffsetDegrees = Math.abs(angleOffsetRadians * (180 / Math.PI));
+                angles.push(angleOffsetDegrees);
+            }
+            playingState.asteroids.pop();
+        }
+        
+        angles.forEach(angle => {
+            expect(angle).toBeGreaterThanOrEqual(0);
+            expect(angle).toBeLessThanOrEqual(5);
+        });
+    });
+
+    it('should spawn angled asteroids with 0-10 degrees at 2 minutes', () => {
+        playingState['gameTime'] = 120.0; // At 2 minutes
+        playingState['asteroidTimer'] = 0;
+        
+        const samples = 50;
+        const angles: number[] = [];
+        
+        for (let i = 0; i < samples; i++) {
+            playingState['asteroidTimer'] = 0;
+            playingState['updateAsteroids'](0.1);
+            const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
+            
+            if (Math.abs(lastAsteroid.velocityY) > 0.001) {
+                const angleRadians = Math.atan2(lastAsteroid.velocityY, lastAsteroid.velocityX);
+                const baseAngleRadians = Math.PI;
+                let angleOffsetRadians = angleRadians - baseAngleRadians;
+                while (angleOffsetRadians > Math.PI) angleOffsetRadians -= 2 * Math.PI;
+                while (angleOffsetRadians < -Math.PI) angleOffsetRadians += 2 * Math.PI;
+                const angleOffsetDegrees = Math.abs(angleOffsetRadians * (180 / Math.PI));
+                angles.push(angleOffsetDegrees);
+            }
+            playingState.asteroids.pop();
+        }
+        
+        angles.forEach(angle => {
+            expect(angle).toBeGreaterThanOrEqual(0);
+            expect(angle).toBeLessThanOrEqual(10);
+        });
+    });
+
+    it('should spawn angled asteroids with 0-20 degrees at 3 minutes', () => {
         playingState['gameTime'] = 180.0; // At 3 minutes
         playingState['asteroidTimer'] = 0;
         
@@ -71,26 +130,52 @@ describe('Angled Asteroids', () => {
             const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
             
             if (Math.abs(lastAsteroid.velocityY) > 0.001) {
-                // Calculate angle from velocity vector
-                // Base direction is left (180 degrees or π radians), so angle offset is relative to that
                 const angleRadians = Math.atan2(lastAsteroid.velocityY, lastAsteroid.velocityX);
-                const baseAngleRadians = Math.PI; // 180 degrees
+                const baseAngleRadians = Math.PI;
                 let angleOffsetRadians = angleRadians - baseAngleRadians;
-                
-                // Normalize to -π to π range
                 while (angleOffsetRadians > Math.PI) angleOffsetRadians -= 2 * Math.PI;
                 while (angleOffsetRadians < -Math.PI) angleOffsetRadians += 2 * Math.PI;
-                
                 const angleOffsetDegrees = Math.abs(angleOffsetRadians * (180 / Math.PI));
                 angles.push(angleOffsetDegrees);
             }
-            playingState.asteroids.pop(); // Remove for next iteration
+            playingState.asteroids.pop();
         }
         
-        // Check that all angles are between 0 and 10 degrees
         angles.forEach(angle => {
             expect(angle).toBeGreaterThanOrEqual(0);
-            expect(angle).toBeLessThanOrEqual(10);
+            expect(angle).toBeLessThanOrEqual(20);
+        });
+    });
+
+    it('should ramp up max angle linearly between milestones', () => {
+        // At 1.5 minutes (90 seconds), max angle should be halfway between 5 and 10: 7.5 degrees
+        playingState['gameTime'] = 90.0;
+        playingState['asteroidTimer'] = 0;
+        
+        const samples = 50;
+        const angles: number[] = [];
+        
+        for (let i = 0; i < samples; i++) {
+            playingState['asteroidTimer'] = 0;
+            playingState['updateAsteroids'](0.1);
+            const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
+            
+            if (Math.abs(lastAsteroid.velocityY) > 0.001) {
+                const angleRadians = Math.atan2(lastAsteroid.velocityY, lastAsteroid.velocityX);
+                const baseAngleRadians = Math.PI;
+                let angleOffsetRadians = angleRadians - baseAngleRadians;
+                while (angleOffsetRadians > Math.PI) angleOffsetRadians -= 2 * Math.PI;
+                while (angleOffsetRadians < -Math.PI) angleOffsetRadians += 2 * Math.PI;
+                const angleOffsetDegrees = Math.abs(angleOffsetRadians * (180 / Math.PI));
+                angles.push(angleOffsetDegrees);
+            }
+            playingState.asteroids.pop();
+        }
+        
+        // At 90 seconds, max angle should be 7.5 degrees (halfway between 5 and 10)
+        angles.forEach(angle => {
+            expect(angle).toBeGreaterThanOrEqual(0);
+            expect(angle).toBeLessThanOrEqual(7.5);
         });
     });
 
