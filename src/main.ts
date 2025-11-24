@@ -94,6 +94,17 @@ function requestFullscreenOnInteraction() {
     document.addEventListener(event, requestFullscreenOnInteraction, { once: true, passive: true });
 });
 
+// Attempt fullscreen when rotating to landscape
+function attemptFullscreenOnLandscape() {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    if (!isPortrait && isMobileDevice() && !getFullscreenElement()) {
+        // Small delay to ensure orientation change is complete
+        setTimeout(() => {
+            attemptFullscreen();
+        }, 200);
+    }
+}
+
 async function attemptOrientationLock() {
     if (!orientationLockSupported || orientationLockAttempted) {
         return false;
@@ -140,14 +151,16 @@ function checkOrientation() {
         // Landscape mode
         isPortraitMode = false;
         orientationMessage.classList.remove('show');
+        // Attempt fullscreen when rotating to landscape
+        attemptFullscreenOnLandscape();
     }
 }
 
 // Make canvas responsive for mobile
 function resizeCanvas() {
-    const container = canvas.parentElement!;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+    // Use window dimensions to account for address bar
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
     
     // Maintain aspect ratio
     const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
@@ -161,6 +174,9 @@ function resizeCanvas() {
     
     canvas.style.width = `${displayWidth}px`;
     canvas.style.height = `${displayHeight}px`;
+    
+    // Ensure canvas stays centered
+    canvas.style.margin = '0 auto';
 }
 
 // Try to lock orientation on load (if supported)
@@ -176,17 +192,30 @@ checkOrientation();
 // Initial resize
 resizeCanvas();
 
-// Listen for orientation changes
-window.addEventListener('resize', () => {
+// Listen for orientation changes and viewport changes
+function handleResize() {
     checkOrientation();
     resizeCanvas();
-});
+}
 
+window.addEventListener('resize', handleResize);
 window.addEventListener('orientationchange', () => {
     setTimeout(() => {
-        checkOrientation();
-        resizeCanvas();
+        handleResize();
     }, 100);
+});
+
+// Handle mobile browser address bar show/hide
+let lastHeight = window.innerHeight;
+window.addEventListener('resize', () => {
+    const currentHeight = window.innerHeight;
+    // If height changed significantly, address bar likely appeared/disappeared
+    if (Math.abs(currentHeight - lastHeight) > 50) {
+        setTimeout(() => {
+            handleResize();
+            lastHeight = window.innerHeight;
+        }, 100);
+    }
 });
 
 // Listen for screen orientation API changes if available
@@ -194,6 +223,8 @@ if ('orientation' in screen) {
     screen.orientation.addEventListener('change', () => {
         checkOrientation();
         resizeCanvas();
+        // Also attempt fullscreen on orientation change to landscape
+        attemptFullscreenOnLandscape();
     });
 }
 
