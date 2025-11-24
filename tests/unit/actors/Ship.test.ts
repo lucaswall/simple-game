@@ -177,7 +177,7 @@ describe('Ship', () => {
             
             ship.heat = 10;
             // Set overheat timer to start the overheat cooldown
-            ship['overheatTimer'] = (SHIP_FIRE_RATE_MS * 5) / 1000; // Full overheat duration
+            ship['overheatTimer'] = (SHIP_FIRE_RATE_MS * 10) / 1000; // Full overheat duration (double cooldown)
             
             // Update for more than the decrease interval
             ship.update(HEAT_DECREASE_INTERVAL + 0.1);
@@ -187,7 +187,7 @@ describe('Ship', () => {
         });
 
         it('should start overheat timer when heat reaches 10', () => {
-            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000; // 1.25 seconds
+            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 10) / 1000; // 2.5 seconds (double cooldown)
             
             ship.heat = 8; // With +2 per shot, starting at 8 will reach 10
             ship['overheatTimer'] = -1; // Timer not started
@@ -205,7 +205,7 @@ describe('Ship', () => {
         });
 
         it('should count down overheat timer', () => {
-            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000;
+            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 10) / 1000; // Double cooldown
             
             ship.heat = 10;
             ship['overheatTimer'] = OVERHEAT_DURATION;
@@ -261,7 +261,7 @@ describe('Ship', () => {
         });
 
         it('should allow shooting again after overheat cooldown ends', () => {
-            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000;
+            const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 10) / 1000; // Double cooldown
             
             ship.heat = 10;
             ship['overheatTimer'] = OVERHEAT_DURATION;

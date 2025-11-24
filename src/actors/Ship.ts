@@ -75,7 +75,7 @@ export class Ship implements Collidable {
 
     private updateWeaponHeat(deltaTime: number): void {
         const HEAT_DECREASE_INTERVAL = (SHIP_FIRE_RATE_MS * 2) / 1000; // Convert to seconds
-        const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000; // Convert to seconds
+        const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 10) / 1000; // Convert to seconds (double cooldown time)
 
         // Handle overheat state
         if (this.heat >= 10) {
