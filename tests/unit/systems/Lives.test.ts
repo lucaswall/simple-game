@@ -63,6 +63,23 @@ describe('Lives System', () => {
         expect(playingState.ship.controllable).toBe(true);
     });
 
+    it('should reset weapon heat on respawn', () => {
+        playingState.ship.heat = 10;
+        playingState.ship['overheatTimer'] = 0.5;
+        playingState.ship['heatCooldownTimer'] = 0.3;
+        
+        playingState.lives = 2;
+        playingState['startExplosion'](mockGame as any);
+        playingState.explosionTimer = 0.05;
+        playingState.particleManager.particles = [];
+        
+        playingState.update(mockGame as any, 0.1);
+        
+        expect(playingState.ship.heat).toBe(0);
+        expect(playingState.ship['overheatTimer']).toBe(-1);
+        expect(playingState.ship['heatCooldownTimer']).toBe(0);
+    });
+
     it('should start invincibility period after respawn', () => {
         playingState.lives = 2;
         playingState['startExplosion'](mockGame as any);
@@ -106,6 +123,18 @@ describe('Lives System', () => {
         playingState.lives = 0;
         playingState.enter(mockGame as any);
         expect(playingState.lives).toBe(STARTING_LIVES);
+    });
+
+    it('should reset weapon heat when entering playing state', () => {
+        playingState.ship.heat = 8;
+        playingState.ship['overheatTimer'] = 0.2;
+        playingState.ship['heatCooldownTimer'] = 0.1;
+        
+        playingState.enter(mockGame as any);
+        
+        expect(playingState.ship.heat).toBe(0);
+        expect(playingState.ship['overheatTimer']).toBe(-1);
+        expect(playingState.ship['heatCooldownTimer']).toBe(0);
     });
 
     it('should subtract 1 minute from game time when a life is lost', () => {

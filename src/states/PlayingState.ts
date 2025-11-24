@@ -93,6 +93,7 @@ export class PlayingState implements GameState {
     lives: number = STARTING_LIVES;
     invincibilityTimer: number = 0; // Made public for testing
     private blinkTimer: number = 0;
+    private heatBarBlinkTimer: number = 0; // Timer for heat bar blinking when overheated
     private gameTime: number = 0; // Total game time in seconds
     private debugMode: boolean = false;
     private debugKeyPressed: boolean = false; // Track if D key was pressed to toggle on keydown
@@ -115,12 +116,17 @@ export class PlayingState implements GameState {
         this.lives = STARTING_LIVES;
         this.invincibilityTimer = 0;
         this.blinkTimer = 0;
+        this.heatBarBlinkTimer = 0;
         this.gameTime = 0;
         this.debugMode = false;
         this.debugKeyPressed = false;
         // Reset ship position
         this.ship.x = SHIP_X_POSITION;
         this.ship.y = PLAY_AREA_HEIGHT / 2;
+        // Reset weapon heat
+        this.ship.heat = 0;
+        this.ship['overheatTimer'] = -1;
+        this.ship['heatCooldownTimer'] = 0;
         // Start asteroid timer with initial spawn interval
         this.asteroidTimer = ASTEROID_SPAWN_INTERVAL_START;
     }
@@ -183,6 +189,15 @@ export class PlayingState implements GameState {
                 this.ship.visible = true;
                 this.ship.collisionEnabled = true;
             }
+        }
+
+        // Update heat bar blink timer
+        if (this.ship.heat >= 10 && this.ship['overheatTimer'] > 0) {
+            // Weapon is jammed - blink the heat bar
+            this.heatBarBlinkTimer += deltaTime;
+        } else {
+            // Reset blink timer when not overheated
+            this.heatBarBlinkTimer = 0;
         }
 
         // Normal gameplay updates (time may be slowed/frozen via Game.timeScale)
@@ -261,6 +276,9 @@ export class PlayingState implements GameState {
         ctx.textBaseline = 'top';
         ctx.fillText(`Score: ${this.score}`, 20, 20);
         
+        // Draw weapon heat bar at top center
+        this.drawHeatBar(ctx);
+        
         // Draw lives icons in top right
         this.drawLives(ctx);
         
@@ -307,9 +325,66 @@ export class PlayingState implements GameState {
         this.ship.controllable = true;
         this.ship.collisionEnabled = false; // Disabled during invincibility
         
+        // Reset weapon heat on respawn
+        this.ship.heat = 0;
+        this.ship['overheatTimer'] = -1;
+        this.ship['heatCooldownTimer'] = 0;
+        
         // Start invincibility period
         this.invincibilityTimer = INVINCIBILITY_DURATION;
         this.blinkTimer = 0;
+    }
+
+    private drawHeatBar(ctx: CanvasRenderingContext2D): void {
+        const BAR_WIDTH = 200;
+        const BAR_HEIGHT = 20;
+        const BAR_X = (ctx.canvas.width - BAR_WIDTH) / 2;
+        const BAR_Y = 20;
+        const BLINK_INTERVAL = 0.15; // Blink every 0.15 seconds
+        
+        // Check if weapon is jammed (overheated and in cooldown)
+        const isJammed = this.ship.heat >= 10 && this.ship['overheatTimer'] > 0;
+        const shouldBlink = isJammed && Math.floor(this.heatBarBlinkTimer / BLINK_INTERVAL) % 2 === 0;
+        
+        // Draw background
+        ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
+        ctx.fillRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT);
+        
+        // Draw heat segments (1-10)
+        const segmentWidth = BAR_WIDTH / 10;
+        const heat = Math.floor(this.ship.heat);
+        
+        // If jammed and blinking, hide the bar
+        if (!shouldBlink || !isJammed) {
+            for (let i = 0; i < 10; i++) {
+                const segmentX = BAR_X + i * segmentWidth;
+                
+                if (i < heat) {
+                    // Filled segments - color changes based on heat level
+                    if (heat >= 10) {
+                        ctx.fillStyle = '#f00'; // Red when overheated
+                    } else if (heat >= 7) {
+                        ctx.fillStyle = '#f80'; // Orange when high
+                    } else {
+                        ctx.fillStyle = '#ff0'; // Yellow when moderate
+                    }
+                } else {
+                    // Empty segments
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+                }
+                
+                ctx.fillRect(segmentX + 1, BAR_Y + 1, segmentWidth - 2, BAR_HEIGHT - 2);
+            }
+        }
+        
+        // Draw border (blink border when jammed)
+        if (isJammed && shouldBlink) {
+            ctx.strokeStyle = '#f00';
+        } else {
+            ctx.strokeStyle = '#fff';
+        }
+        ctx.lineWidth = 2;
+        ctx.strokeRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT);
     }
 
     private drawLives(ctx: CanvasRenderingContext2D): void {

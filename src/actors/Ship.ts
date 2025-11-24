@@ -26,6 +26,11 @@ export class Ship implements Collidable {
     collisionEnabled: boolean = true;
     private propulsionParticles: PropulsionParticle[] = [];
     private particleSpawnTimer: number = 0;
+    
+    // Weapon overheating system
+    heat: number = 0; // Heat level from 0 to 10
+    private overheatTimer: number = -1; // Timer for overheat cooldown (-1 = not started, 0 = finished, >0 = active)
+    private heatCooldownTimer: number = 0; // Timer for heat decrease
 
     constructor(input: Input, bullets: Bullet[]) {
         this.input = input;
@@ -34,6 +39,9 @@ export class Ship implements Collidable {
 
     update(deltaTime: number): void {
         if (!this.visible) return;
+
+        // Update weapon overheating system
+        this.updateWeaponHeat(deltaTime);
 
         // Update input reference Y for touch detection
         this.input.setReferenceY(this.y);
@@ -49,18 +57,68 @@ export class Ship implements Collidable {
             // Clamp position to gameplay area
             this.y = Math.max(SHIP_SIZE, Math.min(PLAY_AREA_HEIGHT - SHIP_SIZE, this.y));
 
-            // Shooting
-            if (this.input.keys.Space) {
+            // Shooting (only if not overheated)
+            if (this.input.keys.Space && this.heat < 10) {
                 const now = performance.now();
                 if (now - this.lastShotTime > SHIP_FIRE_RATE_MS) {
                     this.bullets.push(new Bullet(this.x, this.y, BULLET_SPEED, BULLET_SIZE));
                     this.lastShotTime = now;
+                    // Increase heat by 1 per shot
+                    this.heat = Math.min(10, this.heat + 1);
                 }
             }
         }
 
         // Update propulsion particles
         this.updatePropulsionParticles(deltaTime);
+    }
+
+    private updateWeaponHeat(deltaTime: number): void {
+        const HEAT_DECREASE_INTERVAL = (SHIP_FIRE_RATE_MS * 2) / 1000; // Convert to seconds
+        const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 5) / 1000; // Convert to seconds
+
+        // Handle overheat state
+        if (this.heat >= 10) {
+            if (this.overheatTimer < 0) {
+                // Start overheat cooldown (timer not started yet)
+                this.overheatTimer = OVERHEAT_DURATION;
+            } else if (this.overheatTimer > 0) {
+                // Count down overheat timer
+                this.overheatTimer -= deltaTime;
+                if (this.overheatTimer <= 0) {
+                    // Overheat period ended - instantly decrease heat by 3 points
+                    this.heat = Math.max(0, this.heat - 3);
+                    // Reset cooldown timer so normal decrease doesn't happen immediately
+                    this.heatCooldownTimer = 0;
+                    // If heat drops below 10, reset overheat timer to allow it to start again if needed
+                    if (this.heat < 10) {
+                        this.overheatTimer = -1;
+                    } else {
+                        // Heat is still >= 10, keep timer at 0 to allow normal decrease
+                        this.overheatTimer = 0;
+                    }
+                    // Return early to prevent normal decrease logic from running in same frame
+                    return;
+                }
+            }
+            // If overheatTimer === 0, overheat finished, allow heat to decrease
+        }
+
+        // Decrease heat over time (only if not in overheat cooldown)
+        if (this.heat > 0 && this.overheatTimer <= 0) {
+            this.heatCooldownTimer += deltaTime;
+            if (this.heatCooldownTimer >= HEAT_DECREASE_INTERVAL) {
+                this.heat = Math.max(0, this.heat - 1);
+                this.heatCooldownTimer = 0;
+                // If heat drops below 10, reset overheat timer to allow it to start again if needed
+                if (this.heat < 10) {
+                    this.overheatTimer = -1;
+                }
+            }
+        } else if (this.overheatTimer > 0) {
+            // Reset cooldown timer if still in overheat cooldown
+            this.heatCooldownTimer = 0;
+        }
     }
 
     private updatePropulsionParticles(deltaTime: number): void {
