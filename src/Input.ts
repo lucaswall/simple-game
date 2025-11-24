@@ -2,7 +2,8 @@ export class Input {
     keys: { [key: string]: boolean } = {
         ArrowUp: false,
         ArrowDown: false,
-        Space: false
+        Space: false,
+        Escape: false
     };
 
     constructor() {
@@ -23,5 +24,6 @@ export class Input {
         this.keys.ArrowUp = false;
         this.keys.ArrowDown = false;
         this.keys.Space = false;
+        this.keys.Escape = false;
     }
 }

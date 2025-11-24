@@ -7,7 +7,7 @@ import { Starfield } from '../Starfield';
 import { ParticleManager } from '../ParticleManager';
 import { Input } from '../Input';
 import { SHIP_X_POSITION, UI_HEIGHT, GAME_HEIGHT } from '../Constants';
-import { MainMenuState } from './MainMenuState';
+import { GameOverState } from './GameOverState';
 
 // Gameplay-specific constants
 const ASTEROID_SPAWN_INTERVAL = 1.5; // Seconds
@@ -123,8 +123,8 @@ export class PlayingState implements GameState {
                     // Respawn ship
                     this.respawnShip();
                 } else {
-                    // Game over - transition to main menu
-                    game.changeState(new MainMenuState(this.input));
+                    // Game over - transition to game over screen
+                    game.changeState(new GameOverState(this.input, this.score));
                 }
             }
             return;
