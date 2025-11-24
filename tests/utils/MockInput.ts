@@ -2,7 +2,7 @@ import { Input } from '../../src/core/Input';
 
 export class MockInput extends Input {
     constructor() {
-        super();
+        super(undefined); // Pass undefined for canvas to prevent touch event setup
         // Override to prevent actual event listeners
     }
 
