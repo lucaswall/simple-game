@@ -55,6 +55,11 @@ export const BULLET_SIZE = 5; // Radius
 // Score constants
 const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
 
+// Lives constants
+const STARTING_LIVES = 3;
+const INVINCIBILITY_DURATION = 3.0; // Seconds
+const BLINK_INTERVAL = 0.1; // Seconds between blinks
+
 // Play area (gameplay area below UI)
 export const PLAY_AREA_HEIGHT = GAME_HEIGHT - UI_HEIGHT;
 
@@ -68,6 +73,9 @@ export class PlayingState implements GameState {
     asteroidTimer: number = 0;
     private explosionTimer: number = 0;
     score: number = 0;
+    lives: number = STARTING_LIVES;
+    private invincibilityTimer: number = 0;
+    private blinkTimer: number = 0;
 
     constructor(input: Input) {
         this.input = input;
@@ -82,8 +90,14 @@ export class PlayingState implements GameState {
         this.ship.visible = true;
         this.ship.controllable = true;
         this.ship.collisionEnabled = true;
-        // Reset score when entering playing state
+        // Reset score and lives when entering playing state
         this.score = 0;
+        this.lives = STARTING_LIVES;
+        this.invincibilityTimer = 0;
+        this.blinkTimer = 0;
+        // Reset ship position
+        this.ship.x = SHIP_X_POSITION;
+        this.ship.y = PLAY_AREA_HEIGHT / 2;
         // Start asteroid timer
         this.asteroidTimer = ASTEROID_SPAWN_INTERVAL;
     }
@@ -100,13 +114,39 @@ export class PlayingState implements GameState {
             this.updateAsteroids(deltaTime);
             this.particleManager.update(deltaTime);
 
-            // Transition to main menu when timer expires and particles are gone
+            // When explosion finishes, respawn or game over
             if (this.explosionTimer <= 0 && this.particleManager.particles.length === 0) {
-                // Restore normal time before leaving the state.
+                // Restore normal time
                 game.setTimeScale(1);
-                game.changeState(new MainMenuState(this.input));
+                
+                if (this.lives > 0) {
+                    // Respawn ship
+                    this.respawnShip();
+                } else {
+                    // Game over - transition to main menu
+                    game.changeState(new MainMenuState(this.input));
+                }
             }
             return;
+        }
+
+        // Update invincibility and blinking
+        if (this.invincibilityTimer > 0) {
+            this.invincibilityTimer -= deltaTime;
+            this.blinkTimer += deltaTime;
+            
+            // Blink ship visibility
+            if (this.blinkTimer >= BLINK_INTERVAL) {
+                this.ship.visible = !this.ship.visible;
+                this.blinkTimer = 0;
+            }
+            
+            // End invincibility
+            if (this.invincibilityTimer <= 0) {
+                this.invincibilityTimer = 0;
+                this.ship.visible = true;
+                this.ship.collisionEnabled = true;
+            }
         }
 
         // Normal gameplay updates (time may be slowed/frozen via Game.timeScale)
@@ -130,6 +170,9 @@ export class PlayingState implements GameState {
         ctx.textBaseline = 'top';
         ctx.fillText(`Score: ${this.score}`, 20, 20);
         
+        // Draw lives icons in top right
+        this.drawLives(ctx);
+        
         // Translate to gameplay area
         ctx.save();
         ctx.translate(0, UI_HEIGHT);
@@ -150,10 +193,49 @@ export class PlayingState implements GameState {
         const shipCollisionX = this.ship.x - (SHIP_X_POSITION - SHIP_COLLISION_X);
         this.particleManager.createExplosion(shipCollisionX, this.ship.y);
         this.ship.visible = false;
+        this.ship.collisionEnabled = false;
+        this.lives--;
         this.explosionTimer = EXPLOSION_DURATION;
 
         // Enter global slow motion for the duration of the explosion sequence.
         game.setTimeScale(EXPLOSION_TIME_SCALE);
+    }
+
+    private respawnShip(): void {
+        // Reset ship position
+        this.ship.x = SHIP_X_POSITION;
+        this.ship.y = PLAY_AREA_HEIGHT / 2;
+        this.ship.visible = true;
+        this.ship.controllable = true;
+        this.ship.collisionEnabled = false; // Disabled during invincibility
+        
+        // Start invincibility period
+        this.invincibilityTimer = INVINCIBILITY_DURATION;
+        this.blinkTimer = 0;
+    }
+
+    private drawLives(ctx: CanvasRenderingContext2D): void {
+        const LIFE_ICON_SIZE = 15;
+        const LIFE_SPACING = 25;
+        const START_X = ctx.canvas.width - 20;
+        const START_Y = 20;
+        
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        
+        for (let i = 0; i < this.lives; i++) {
+            const x = START_X - (i * LIFE_SPACING);
+            const y = START_Y;
+            
+            // Draw small ship icon (triangle pointing up)
+            ctx.beginPath();
+            ctx.moveTo(x, y); // Top point
+            ctx.lineTo(x - LIFE_ICON_SIZE / 2, y + LIFE_ICON_SIZE); // Bottom left
+            ctx.lineTo(x + LIFE_ICON_SIZE / 2, y + LIFE_ICON_SIZE); // Bottom right
+            ctx.closePath();
+            ctx.fill();
+        }
     }
 
     private updateBullets(deltaTime: number) {
@@ -184,8 +266,8 @@ export class PlayingState implements GameState {
     }
 
     private checkCollisions(game: Game) {
-        // Skip all collision checks if ship collisions are disabled
-        if (!this.ship.collisionEnabled) {
+        // Skip all collision checks if ship collisions are disabled or ship is invincible
+        if (!this.ship.collisionEnabled || this.invincibilityTimer > 0) {
             return;
         }
 
