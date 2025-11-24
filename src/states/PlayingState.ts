@@ -49,9 +49,9 @@ export const ASTEROID_MEDIUM_SPLIT_ANGLE_MIN = 10; // Minimum split angle for me
 export const ASTEROID_MEDIUM_SPLIT_ANGLE_MAX = 30; // Maximum split angle for medium->small in degrees
 
 // Exploding asteroid constants
-export const ASTEROID_EXPLOSION_RADIUS_SMALL = 60; // Explosion radius for small exploding asteroids
-export const ASTEROID_EXPLOSION_RADIUS_MEDIUM = 100; // Explosion radius for medium exploding asteroids
-export const ASTEROID_EXPLOSION_RADIUS_LARGE = 150; // Explosion radius for large exploding asteroids
+export const ASTEROID_EXPLOSION_RADIUS_SMALL = 100; // Explosion radius for small exploding asteroids
+export const ASTEROID_EXPLOSION_RADIUS_MEDIUM = 150; // Explosion radius for medium exploding asteroids
+export const ASTEROID_EXPLOSION_RADIUS_LARGE = 200; // Explosion radius for large exploding asteroids
 export const ASTEROID_FLASH_INTERVAL = 0.2; // Seconds between red flashes
 export const ASTEROID_EXPLODING_CHANCE_START = 0.1; // 1 in 10 chance at 1 minute
 export const ASTEROID_EXPLODING_CHANCE_END = 0.2; // 2 in 10 chance at 3 minutes

@@ -221,6 +221,9 @@ export class Asteroid implements Collidable {
         // Create large explosion effect
         context.particleManager.createExplosion(this.x, this.y, '#f00');
         
+        // Create explosion visual (translucent red circle)
+        context.particleManager.createExplosionVisual(this.x, this.y, explosionRadius, 0.5);
+        
         // Mark this asteroid as inactive
         this.active = false;
         this.collisionEnabled = false;

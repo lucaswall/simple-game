@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Asteroid, AsteroidSize } from '../../../src/actors/Asteroid';
 import { Bullet } from '../../../src/actors/Bullet';
-import { Ship } from '../../../src/actors/Ship';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
 import { ParticleManager } from '../../../src/managers/ParticleManager';
 import { CollisionContext } from '../../../src/interfaces/Collidable';
 import { PlayingState } from '../../../src/states/PlayingState';
-import { ASTEROID_EXPLOSION_RADIUS_SMALL, ASTEROID_EXPLOSION_RADIUS_MEDIUM, ASTEROID_EXPLOSION_RADIUS_LARGE, ASTEROID_EXPLODING_START_TIME, ASTEROID_EXPLODING_CHANCE_START, ASTEROID_EXPLODING_CHANCE_END, ASTEROID_EXPLODING_RAMP_TIME, ASTEROID_FLASH_INTERVAL } from '../../../src/states/PlayingState';
-import { SHIP_COLLISION_X, SHIP_X_POSITION } from '../../../src/core/Constants';
-import { SHIP_COLLISION_RADIUS } from '../../../src/states/PlayingState';
+import { ASTEROID_EXPLOSION_RADIUS_SMALL, ASTEROID_EXPLOSION_RADIUS_MEDIUM, ASTEROID_EXPLOSION_RADIUS_LARGE, SHIP_COLLISION_X } from '../../../src/states/PlayingState';
+import { SHIP_X_POSITION } from '../../../src/core/Constants';
 
 describe('Exploding Asteroids', () => {
     let asteroid: Asteroid;
