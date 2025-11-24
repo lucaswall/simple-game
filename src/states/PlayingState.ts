@@ -13,7 +13,9 @@ import { CollisionContext, Collidable } from '../interfaces/Collidable';
 
 // Gameplay-specific constants
 const ASTEROID_SPAWN_INTERVAL_START = 3.0; // Seconds - starting spawn interval
-const ASTEROID_SPAWN_INTERVAL_END = 1.0; // Seconds - spawn interval at 3 minutes
+const ASTEROID_SPAWN_INTERVAL_1MIN = 1.0; // Seconds - spawn interval at 1 minute
+const ASTEROID_SPAWN_INTERVAL_2MIN = 0.5; // Seconds - spawn interval at 2 minutes
+const ASTEROID_SPAWN_INTERVAL_3MIN = 0.25; // Seconds - spawn interval at 3 minutes
 const ASTEROID_SPAWN_RAMP_TIME = 180.0; // Seconds - time to reach max spawn rate (3 minutes)
 const ASTEROID_LARGE_RATIO_START = 0.1; // Starting large asteroid ratio (10%)
 const ASTEROID_LARGE_RATIO_END = 0.5; // Large asteroid ratio at 3 minutes (50%)
@@ -344,10 +346,27 @@ export class PlayingState implements GameState {
     }
 
     private updateAsteroids(deltaTime: number) {
-        // Calculate dynamic spawn interval based on game time
-        const spawnIntervalProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
-        const currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
-            (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_END) * spawnIntervalProgress;
+        // Calculate dynamic spawn interval based on game time (piecewise linear)
+        let currentSpawnInterval: number;
+        if (this.gameTime <= 60) {
+            // From 0 to 60 seconds: linear from 3.0 to 1.0
+            const t = this.gameTime / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
+                (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_1MIN) * t;
+        } else if (this.gameTime <= 120) {
+            // From 60 to 120 seconds: linear from 1.0 to 0.5
+            const t = (this.gameTime - 60) / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_1MIN - 
+                (ASTEROID_SPAWN_INTERVAL_1MIN - ASTEROID_SPAWN_INTERVAL_2MIN) * t;
+        } else if (this.gameTime <= 180) {
+            // From 120 to 180 seconds: linear from 0.5 to 0.25
+            const t = (this.gameTime - 120) / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_2MIN - 
+                (ASTEROID_SPAWN_INTERVAL_2MIN - ASTEROID_SPAWN_INTERVAL_3MIN) * t;
+        } else {
+            // After 180 seconds: stay at 0.25
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_3MIN;
+        }
         
         // Calculate dynamic large asteroid ratio based on game time
         const largeRatioProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
@@ -372,9 +391,23 @@ export class PlayingState implements GameState {
 
     private drawDebugOverlay(ctx: CanvasRenderingContext2D): void {
         // Calculate current spawn rate and asteroid chances
-        const spawnIntervalProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);
-        const currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
-            (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_END) * spawnIntervalProgress;
+        // Use same piecewise linear calculation as updateAsteroids
+        let currentSpawnInterval: number;
+        if (this.gameTime <= 60) {
+            const t = this.gameTime / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_START - 
+                (ASTEROID_SPAWN_INTERVAL_START - ASTEROID_SPAWN_INTERVAL_1MIN) * t;
+        } else if (this.gameTime <= 120) {
+            const t = (this.gameTime - 60) / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_1MIN - 
+                (ASTEROID_SPAWN_INTERVAL_1MIN - ASTEROID_SPAWN_INTERVAL_2MIN) * t;
+        } else if (this.gameTime <= 180) {
+            const t = (this.gameTime - 120) / 60.0;
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_2MIN - 
+                (ASTEROID_SPAWN_INTERVAL_2MIN - ASTEROID_SPAWN_INTERVAL_3MIN) * t;
+        } else {
+            currentSpawnInterval = ASTEROID_SPAWN_INTERVAL_3MIN;
+        }
         const spawnRate = 1.0 / currentSpawnInterval; // Asteroids per second
         
         const largeRatioProgress = Math.min(this.gameTime / ASTEROID_SPAWN_RAMP_TIME, 1.0);

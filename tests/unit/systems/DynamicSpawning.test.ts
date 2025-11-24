@@ -46,31 +46,49 @@ describe('Dynamic Spawning System', () => {
         expect(playingState['asteroidTimer']).toBeCloseTo(3.0, 1);
     });
 
+    it('should calculate spawn interval correctly at 1 minute', () => {
+        // At 1 minute (60 seconds), interval should be 1.0
+        playingState['gameTime'] = 60.0;
+        playingState['asteroidTimer'] = 0;
+        playingState['updateAsteroids'](0.1);
+        
+        expect(playingState['asteroidTimer']).toBeCloseTo(1.0, 1);
+    });
+
+    it('should calculate spawn interval correctly at 2 minutes', () => {
+        // At 2 minutes (120 seconds), interval should be 0.5
+        playingState['gameTime'] = 120.0;
+        playingState['asteroidTimer'] = 0;
+        playingState['updateAsteroids'](0.1);
+        
+        expect(playingState['asteroidTimer']).toBeCloseTo(0.5, 1);
+    });
+
     it('should calculate spawn interval correctly at 3 minutes', () => {
-        // At 3 minutes (180 seconds), interval should be 1.0
+        // At 3 minutes (180 seconds), interval should be 0.25
         playingState['gameTime'] = 180.0;
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
         
-        expect(playingState['asteroidTimer']).toBeCloseTo(1.0, 1);
+        expect(playingState['asteroidTimer']).toBeCloseTo(0.25, 1);
     });
 
     it('should calculate spawn interval correctly at 1.5 minutes', () => {
-        // At 1.5 minutes (90 seconds), interval should be halfway: 2.0
+        // At 1.5 minutes (90 seconds), interval should be halfway between 1.0 and 0.5: 0.75
         playingState['gameTime'] = 90.0;
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
         
-        expect(playingState['asteroidTimer']).toBeCloseTo(2.0, 1);
+        expect(playingState['asteroidTimer']).toBeCloseTo(0.75, 1);
     });
 
-    it('should cap spawn interval at 1 second after 3 minutes', () => {
-        // After 3 minutes, interval should stay at 1.0
+    it('should cap spawn interval at 0.25 seconds after 3 minutes', () => {
+        // After 3 minutes, interval should stay at 0.25
         playingState['gameTime'] = 200.0;
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
         
-        expect(playingState['asteroidTimer']).toBeCloseTo(1.0, 1);
+        expect(playingState['asteroidTimer']).toBeCloseTo(0.25, 1);
     });
 
     it('should start with 10% large asteroid ratio', () => {
@@ -140,11 +158,11 @@ describe('Dynamic Spawning System', () => {
 
     it('should reset spawn interval after game time resets', () => {
         // Advance game time to increase spawn rate
-        playingState['gameTime'] = 90.0; // 1.5 minutes
+        playingState['gameTime'] = 90.0; // 1.5 minutes - should be 0.75 seconds
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
         const fastInterval = playingState['asteroidTimer'];
-        expect(fastInterval).toBeCloseTo(2.0, 1);
+        expect(fastInterval).toBeCloseTo(0.75, 1);
         
         // Reset game time (simulating life loss)
         playingState['gameTime'] = 0;

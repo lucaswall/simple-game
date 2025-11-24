@@ -57,19 +57,58 @@ describe('Debug Overlay', () => {
     it('should calculate spawn rate correctly for debug display', () => {
         // At start (gameTime = 0), spawn interval should be 3.0, so rate = 1/3
         playingState['gameTime'] = 0;
-        const spawnIntervalProgress = Math.min(playingState['gameTime'] / 180.0, 1.0);
-        const currentSpawnInterval = 3.0 - (3.0 - 1.0) * spawnIntervalProgress;
+        let currentSpawnInterval: number;
+        if (playingState['gameTime'] <= 60) {
+            const t = playingState['gameTime'] / 60.0;
+            currentSpawnInterval = 3.0 - (3.0 - 1.0) * t;
+        } else if (playingState['gameTime'] <= 120) {
+            const t = (playingState['gameTime'] - 60) / 60.0;
+            currentSpawnInterval = 1.0 - (1.0 - 0.5) * t;
+        } else if (playingState['gameTime'] <= 180) {
+            const t = (playingState['gameTime'] - 120) / 60.0;
+            currentSpawnInterval = 0.5 - (0.5 - 0.25) * t;
+        } else {
+            currentSpawnInterval = 0.25;
+        }
         const spawnRate = 1.0 / currentSpawnInterval;
         
         expect(spawnRate).toBeCloseTo(1.0 / 3.0, 2);
         
-        // At 3 minutes (180s), spawn interval should be 1.0, so rate = 1.0
-        playingState['gameTime'] = 180.0;
-        const spawnIntervalProgress2 = Math.min(playingState['gameTime'] / 180.0, 1.0);
-        const currentSpawnInterval2 = 3.0 - (3.0 - 1.0) * spawnIntervalProgress2;
-        const spawnRate2 = 1.0 / currentSpawnInterval2;
+        // At 1 minute (60s), spawn interval should be 1.0, so rate = 1.0
+        playingState['gameTime'] = 60.0;
+        if (playingState['gameTime'] <= 60) {
+            const t = playingState['gameTime'] / 60.0;
+            currentSpawnInterval = 3.0 - (3.0 - 1.0) * t;
+        } else if (playingState['gameTime'] <= 120) {
+            const t = (playingState['gameTime'] - 60) / 60.0;
+            currentSpawnInterval = 1.0 - (1.0 - 0.5) * t;
+        } else if (playingState['gameTime'] <= 180) {
+            const t = (playingState['gameTime'] - 120) / 60.0;
+            currentSpawnInterval = 0.5 - (0.5 - 0.25) * t;
+        } else {
+            currentSpawnInterval = 0.25;
+        }
+        const spawnRate2 = 1.0 / currentSpawnInterval;
         
         expect(spawnRate2).toBeCloseTo(1.0, 2);
+        
+        // At 3 minutes (180s), spawn interval should be 0.25, so rate = 4.0
+        playingState['gameTime'] = 180.0;
+        if (playingState['gameTime'] <= 60) {
+            const t = playingState['gameTime'] / 60.0;
+            currentSpawnInterval = 3.0 - (3.0 - 1.0) * t;
+        } else if (playingState['gameTime'] <= 120) {
+            const t = (playingState['gameTime'] - 60) / 60.0;
+            currentSpawnInterval = 1.0 - (1.0 - 0.5) * t;
+        } else if (playingState['gameTime'] <= 180) {
+            const t = (playingState['gameTime'] - 120) / 60.0;
+            currentSpawnInterval = 0.5 - (0.5 - 0.25) * t;
+        } else {
+            currentSpawnInterval = 0.25;
+        }
+        const spawnRate3 = 1.0 / currentSpawnInterval;
+        
+        expect(spawnRate3).toBeCloseTo(4.0, 2);
     });
 
     it('should calculate asteroid chances correctly for debug display', () => {
