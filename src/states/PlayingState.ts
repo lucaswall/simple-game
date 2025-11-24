@@ -59,7 +59,7 @@ export const ASTEROID_POINTS = 100; // Points awarded for destroying an asteroid
 
 // Lives constants
 export const STARTING_LIVES = 3;
-export const INVINCIBILITY_DURATION = 3.0; // Seconds
+export const INVINCIBILITY_DURATION = 2.0; // Seconds
 const BLINK_INTERVAL = 0.1; // Seconds between blinks
 
 // Play area (gameplay area below UI)
