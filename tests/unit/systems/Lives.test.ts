@@ -108,28 +108,36 @@ describe('Lives System', () => {
         expect(playingState.lives).toBe(STARTING_LIVES);
     });
 
-    it('should reset game time when a life is lost', () => {
+    it('should subtract 1 minute from game time when a life is lost', () => {
         playingState['gameTime'] = 100.0;
+        playingState['startExplosion'](mockGame as any);
+        
+        expect(playingState['gameTime']).toBe(40.0);
+    });
+
+    it('should not allow game time to go below 0 when subtracting', () => {
+        playingState['gameTime'] = 30.0;
         playingState['startExplosion'](mockGame as any);
         
         expect(playingState['gameTime']).toBe(0);
     });
 
-    it('should reset spawn interval when game time resets after life loss', () => {
+    it('should adjust spawn interval when game time decreases after life loss', () => {
         // Advance game time to increase spawn rate
         playingState['gameTime'] = 90.0; // 1.5 minutes - spawn interval should be 0.75
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
         expect(playingState['asteroidTimer']).toBeCloseTo(0.75, 1);
         
-        // Lose a life - game time should reset
+        // Lose a life - game time should decrease by 60 seconds (90 - 60 = 30)
         playingState['startExplosion'](mockGame as any);
-        expect(playingState['gameTime']).toBe(0);
+        expect(playingState['gameTime']).toBe(30.0);
         
-        // Next spawn should use initial interval (3.0)
+        // Next spawn should use interval for 30 seconds (between 0 and 60 seconds)
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
-        expect(playingState['asteroidTimer']).toBeCloseTo(3.0, 1);
+        // At 30 seconds: t = 30/60 = 0.5, interval = 3.0 - (3.0 - 1.0) * 0.5 = 3.0 - 1.0 = 2.0
+        expect(playingState['asteroidTimer']).toBeCloseTo(2.0, 1);
     });
 });
 

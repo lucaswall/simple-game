@@ -146,17 +146,17 @@ describe('Dynamic Spawning System', () => {
         expect(ratio).toBeLessThan(0.35);
     });
 
-    it('should reset game time when a life is lost', () => {
+    it('should subtract 1 minute from game time when a life is lost', () => {
         playingState['gameTime'] = 100.0;
         
         // Trigger ship explosion (which decrements lives)
         playingState['startExplosion'](mockGame as any);
         
-        expect(playingState['gameTime']).toBe(0);
+        expect(playingState['gameTime']).toBe(40.0);
         expect(playingState.lives).toBeLessThan(STARTING_LIVES);
     });
 
-    it('should reset spawn interval after game time resets', () => {
+    it('should adjust spawn interval when game time decreases after life loss', () => {
         // Advance game time to increase spawn rate
         playingState['gameTime'] = 90.0; // 1.5 minutes - should be 0.75 seconds
         playingState['asteroidTimer'] = 0;
@@ -164,55 +164,15 @@ describe('Dynamic Spawning System', () => {
         const fastInterval = playingState['asteroidTimer'];
         expect(fastInterval).toBeCloseTo(0.75, 1);
         
-        // Reset game time (simulating life loss)
-        playingState['gameTime'] = 0;
+        // Lose a life - game time decreases by 60 seconds (90 - 60 = 30)
+        playingState['startExplosion'](mockGame as any);
+        expect(playingState['gameTime']).toBe(30.0);
         
-        // Next spawn should use initial slow interval
+        // Next spawn should use interval for 30 seconds
         playingState['asteroidTimer'] = 0;
         playingState['updateAsteroids'](0.1);
-        expect(playingState['asteroidTimer']).toBeCloseTo(3.0, 1);
-    });
-
-    it('should reset large asteroid ratio after game time resets', () => {
-        // Advance game time to increase large asteroid ratio
-        playingState['gameTime'] = 90.0; // 1.5 minutes - should be ~30% large
-        playingState['asteroidTimer'] = 0;
-        
-        // Count large asteroids spawned at this time
-        let largeCount = 0;
-        const samples = 100;
-        for (let i = 0; i < samples; i++) {
-            playingState['asteroidTimer'] = 0;
-            playingState['updateAsteroids'](0.1);
-            const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
-            if (lastAsteroid && lastAsteroid.asteroidSize === AsteroidSize.LARGE) {
-                largeCount++;
-            }
-            playingState.asteroids.pop(); // Remove for next test
-        }
-        
-        const ratioAt90s = largeCount / samples;
-        expect(ratioAt90s).toBeGreaterThan(0.2); // Should be around 30%
-        
-        // Reset game time
-        playingState['gameTime'] = 0;
-        playingState['asteroidTimer'] = 0;
-        
-        // Count large asteroids spawned after reset
-        largeCount = 0;
-        for (let i = 0; i < samples; i++) {
-            playingState['asteroidTimer'] = 0;
-            playingState['updateAsteroids'](0.1);
-            const lastAsteroid = playingState.asteroids[playingState.asteroids.length - 1];
-            if (lastAsteroid && lastAsteroid.asteroidSize === AsteroidSize.LARGE) {
-                largeCount++;
-            }
-            playingState.asteroids.pop(); // Remove for next test
-        }
-        
-        const ratioAfterReset = largeCount / samples;
-        expect(ratioAfterReset).toBeLessThan(0.15); // Should be around 10%
-        expect(ratioAfterReset).toBeLessThan(ratioAt90s); // Should be less than before reset
+        // At 30 seconds: t = 30/60 = 0.5, interval = 3.0 - (3.0 - 1.0) * 0.5 = 2.0
+        expect(playingState['asteroidTimer']).toBeCloseTo(2.0, 1);
     });
 });
 

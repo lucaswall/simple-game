@@ -291,7 +291,8 @@ export class PlayingState implements GameState {
         this.ship.visible = false;
         this.ship.collisionEnabled = false;
         this.lives--;
-        this.gameTime = 0; // Reset game time when a life is lost
+        // Subtract 1 minute from game time when a life is lost (minimum 0)
+        this.gameTime = Math.max(0, this.gameTime - 60);
         this.explosionTimer = EXPLOSION_DURATION;
 
         // Enter global slow motion for the duration of the explosion sequence.
