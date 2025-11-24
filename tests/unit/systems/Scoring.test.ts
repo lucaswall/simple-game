@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayingState } from '../../../src/states/PlayingState';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { Asteroid } from '../../../src/Asteroid';
-import { Bullet } from '../../../src/Bullet';
+import { Asteroid } from '../../../src/actors/Asteroid';
+import { Bullet } from '../../../src/actors/Bullet';
 import { ASTEROID_POINTS } from '../../../src/states/PlayingState';
 
 describe('Scoring System', () => {

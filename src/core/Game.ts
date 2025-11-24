@@ -1,4 +1,4 @@
-import { GameState } from './interfaces/GameState';
+import { GameState } from '../interfaces/GameState';
 import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY } from './Constants';
 
 export class Game {
@@ -99,3 +99,4 @@ export class Game {
         this.ctx.restore();
     }
 }
+

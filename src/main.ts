@@ -1,9 +1,9 @@
 
 import './style.css'
-import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE } from './Constants';
-import { Game } from './Game';
+import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE } from './core/Constants';
+import { Game } from './core/Game';
 import { MainMenuState } from './states/MainMenuState';
-import { Input } from './Input';
+import { Input } from './core/Input';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#gameCanvas')!;
 const ctx = canvas.getContext('2d')!;

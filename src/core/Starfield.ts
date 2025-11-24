@@ -1,6 +1,6 @@
-import { Actor } from './interfaces/Actor';
+import { Actor } from '../interfaces/Actor';
 import { GAME_WIDTH, STAR_COUNT, STAR_MIN_SPEED, STAR_MAX_SPEED } from './Constants';
-import { PLAY_AREA_HEIGHT } from './states/PlayingState';
+import { PLAY_AREA_HEIGHT } from '../states/PlayingState';
 
 interface Star {
     x: number;
@@ -42,3 +42,4 @@ export class Starfield implements Actor {
         });
     }
 }
+

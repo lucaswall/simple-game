@@ -6,8 +6,8 @@ import { GameOverState } from '../../src/states/GameOverState';
 import { MockInput } from '../utils/MockInput';
 import { MockGame } from '../utils/MockGame';
 import { createCollidingShipAsteroid } from '../utils/TestHelpers';
-import { Asteroid } from '../../src/Asteroid';
-import { Bullet } from '../../src/Bullet';
+import { Asteroid } from '../../src/actors/Asteroid';
+import { Bullet } from '../../src/actors/Bullet';
 
 describe('Gameplay Flow Integration', () => {
     let input: MockInput;

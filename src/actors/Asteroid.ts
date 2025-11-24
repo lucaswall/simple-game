@@ -1,8 +1,8 @@
-import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
-import { GAME_WIDTH } from './Constants';
+import { Collidable, CollisionBounds, CollisionContext } from '../interfaces/Collidable';
+import { GAME_WIDTH } from '../core/Constants';
 import { Bullet } from './Bullet';
 import { Ship } from './Ship';
-import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION } from './states/PlayingState';
+import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION } from '../states/PlayingState';
 
 export class Asteroid implements Collidable {
     x: number;
@@ -91,3 +91,4 @@ export class Asteroid implements Collidable {
         // Ship collision is handled by Ship.onCollision
     }
 }
+

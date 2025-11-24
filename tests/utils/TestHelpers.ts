@@ -1,8 +1,8 @@
-import { Ship } from '../../src/Ship';
-import { Asteroid } from '../../src/Asteroid';
-import { Bullet } from '../../src/Bullet';
+import { Ship } from '../../src/actors/Ship';
+import { Asteroid } from '../../src/actors/Asteroid';
+import { Bullet } from '../../src/actors/Bullet';
 import { MockInput } from './MockInput';
-import { SHIP_X_POSITION } from '../../src/Constants';
+import { SHIP_X_POSITION } from '../../src/core/Constants';
 import { PLAY_AREA_HEIGHT } from '../../src/states/PlayingState';
 
 export function createShipAt(x: number, y: number, input?: MockInput): Ship {

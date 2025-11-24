@@ -1,5 +1,5 @@
-import { Actor } from './interfaces/Actor';
-import { PARTICLE_COUNT_PER_EXPLOSION, PARTICLE_MIN_SPEED, PARTICLE_MAX_SPEED, PARTICLE_MIN_LIFE, PARTICLE_MAX_LIFE, PARTICLE_MIN_SIZE, PARTICLE_MAX_SIZE, PARTICLE_HUE_MIN, PARTICLE_HUE_MAX } from './states/PlayingState';
+import { Actor } from '../interfaces/Actor';
+import { PARTICLE_COUNT_PER_EXPLOSION, PARTICLE_MIN_SPEED, PARTICLE_MAX_SPEED, PARTICLE_MIN_LIFE, PARTICLE_MAX_LIFE, PARTICLE_MIN_SIZE, PARTICLE_MAX_SIZE, PARTICLE_HUE_MIN, PARTICLE_HUE_MAX } from '../states/PlayingState';
 
 interface Particle {
     x: number;
@@ -55,3 +55,4 @@ export class ParticleManager implements Actor {
         });
     }
 }
+

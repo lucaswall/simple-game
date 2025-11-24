@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Asteroid } from '../../../src/Asteroid';
-import { Ship } from '../../../src/Ship';
-import { Bullet } from '../../../src/Bullet';
+import { Asteroid } from '../../../src/actors/Asteroid';
+import { Ship } from '../../../src/actors/Ship';
+import { Bullet } from '../../../src/actors/Bullet';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { ParticleManager } from '../../../src/ParticleManager';
+import { ParticleManager } from '../../../src/managers/ParticleManager';
 import { CollisionContext } from '../../../src/interfaces/Collidable';
 import { SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION } from '../../../src/states/PlayingState';
 

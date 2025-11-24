@@ -1,9 +1,9 @@
 import { GameState } from '../interfaces/GameState';
-import { Game } from '../Game';
-import { Starfield } from '../Starfield';
-import { Input } from '../Input';
+import { Game } from '../core/Game';
+import { Starfield } from '../core/Starfield';
+import { Input } from '../core/Input';
 import { MainMenuState } from './MainMenuState';
-import { GAME_WIDTH, GAME_HEIGHT, MENU_TITLE_FONT_SIZE, MENU_SUBTITLE_FONT_SIZE } from '../Constants';
+import { GAME_WIDTH, GAME_HEIGHT, MENU_TITLE_FONT_SIZE, MENU_SUBTITLE_FONT_SIZE } from '../core/Constants';
 
 export class GameOverState implements GameState {
     starfield: Starfield;

@@ -1,9 +1,9 @@
-import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
-import { Input } from './Input';
+import { Collidable, CollisionBounds, CollisionContext } from '../interfaces/Collidable';
+import { Input } from '../core/Input';
 import { Bullet } from './Bullet';
 import { Asteroid } from './Asteroid';
-import { SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from './Constants';
-import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE, PLAY_AREA_HEIGHT, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, SHAKE_INTENSITY_SHIP_HIT, HIT_FREEZE_DURATION } from './states/PlayingState';
+import { SHIP_SIZE, SHIP_X_POSITION, SHIP_BACK_X_POSITION } from '../core/Constants';
+import { SHIP_SPEED, SHIP_FIRE_RATE_MS, BULLET_SPEED, BULLET_SIZE, PLAY_AREA_HEIGHT, SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, HIT_FREEZE_DURATION, SHAKE_INTENSITY_SHIP_HIT } from '../states/PlayingState';
 
 export class Ship implements Collidable {
     x: number = SHIP_X_POSITION;
@@ -85,3 +85,4 @@ export class Ship implements Collidable {
         }
     }
 }
+

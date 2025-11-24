@@ -1,6 +1,6 @@
 import { Actor } from './Actor';
-import { Game } from '../Game';
-import { ParticleManager } from '../ParticleManager';
+import { Game } from '../core/Game';
+import { ParticleManager } from '../managers/ParticleManager';
 
 export interface CollisionBounds {
     type: 'circle' | 'polygon' | 'point';

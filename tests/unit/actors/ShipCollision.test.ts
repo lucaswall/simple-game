@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Ship } from '../../../src/Ship';
-import { Asteroid } from '../../../src/Asteroid';
-import { Bullet } from '../../../src/Bullet';
+import { Ship } from '../../../src/actors/Ship';
+import { Asteroid } from '../../../src/actors/Asteroid';
+import { Bullet } from '../../../src/actors/Bullet';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { ParticleManager } from '../../../src/ParticleManager';
+import { ParticleManager } from '../../../src/managers/ParticleManager';
 import { CollisionContext } from '../../../src/interfaces/Collidable';
-import { SHIP_X_POSITION } from '../../../src/Constants';
+import { SHIP_X_POSITION } from '../../../src/core/Constants';
 import { SHIP_COLLISION_X, SHIP_COLLISION_RADIUS, HIT_FREEZE_DURATION, SHAKE_INTENSITY_SHIP_HIT } from '../../../src/states/PlayingState';
 
 describe('Ship Collision', () => {

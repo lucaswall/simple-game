@@ -1,11 +1,11 @@
 import { GameState } from '../interfaces/GameState';
-import { Game } from '../Game';
-import { Ship } from '../Ship';
-import { Starfield } from '../Starfield';
-import { Bullet } from '../Bullet';
-import { Input } from '../Input';
+import { Game } from '../core/Game';
+import { Ship } from '../actors/Ship';
+import { Starfield } from '../core/Starfield';
+import { Bullet } from '../actors/Bullet';
+import { Input } from '../core/Input';
 import { PlayingState } from './PlayingState';
-import { SHIP_X_POSITION, UI_HEIGHT } from '../Constants';
+import { SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 
 // Intro-specific constants
 const INTRO_CONSTANT_SPEED = 500; // Pixels per second for constant speed entry

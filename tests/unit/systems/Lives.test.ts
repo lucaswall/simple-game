@@ -4,7 +4,7 @@ import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
 import { createCollidingShipAsteroid } from '../../utils/TestHelpers';
 import { STARTING_LIVES, INVINCIBILITY_DURATION } from '../../../src/states/PlayingState';
-import { SHIP_X_POSITION } from '../../../src/Constants';
+import { SHIP_X_POSITION } from '../../../src/core/Constants';
 import { PLAY_AREA_HEIGHT } from '../../../src/states/PlayingState';
 
 describe('Lives System', () => {

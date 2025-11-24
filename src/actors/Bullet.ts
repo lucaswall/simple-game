@@ -1,6 +1,6 @@
-import { Collidable, CollisionBounds, CollisionContext } from './interfaces/Collidable';
+import { Collidable, CollisionBounds, CollisionContext } from '../interfaces/Collidable';
 import { Asteroid } from './Asteroid';
-import { GAME_WIDTH } from './Constants';
+import { GAME_WIDTH } from '../core/Constants';
 
 export class Bullet implements Collidable {
     x: number;
@@ -54,3 +54,4 @@ export class Bullet implements Collidable {
         }
     }
 }
+

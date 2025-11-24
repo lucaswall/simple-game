@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Ship } from '../../../src/Ship';
+import { Ship } from '../../../src/actors/Ship';
 import { MockInput } from '../../utils/MockInput';
-import { Bullet } from '../../../src/Bullet';
-import { SHIP_SIZE } from '../../../src/Constants';
+import { Bullet } from '../../../src/actors/Bullet';
+import { SHIP_SIZE } from '../../../src/core/Constants';
 import { PLAY_AREA_HEIGHT, SHIP_SPEED } from '../../../src/states/PlayingState';
 
 describe('Ship', () => {

@@ -1,14 +1,14 @@
 import { GameState } from '../interfaces/GameState';
-import { Game } from '../Game';
-import { Asteroid } from '../Asteroid';
-import { Ship } from '../Ship';
-import { Bullet } from '../Bullet';
-import { Starfield } from '../Starfield';
-import { ParticleManager } from '../ParticleManager';
-import { Input } from '../Input';
-import { SHIP_X_POSITION, UI_HEIGHT, GAME_HEIGHT } from '../Constants';
+import { Game } from '../core/Game';
+import { Asteroid } from '../actors/Asteroid';
+import { Ship } from '../actors/Ship';
+import { Bullet } from '../actors/Bullet';
+import { Starfield } from '../core/Starfield';
+import { ParticleManager } from '../managers/ParticleManager';
+import { Input } from '../core/Input';
+import { SHIP_X_POSITION, UI_HEIGHT, GAME_HEIGHT } from '../core/Constants';
 import { GameOverState } from './GameOverState';
-import { CollisionManager } from '../utils/CollisionManager';
+import { CollisionManager } from '../managers/CollisionManager';
 import { CollisionContext, Collidable } from '../interfaces/Collidable';
 
 // Gameplay-specific constants

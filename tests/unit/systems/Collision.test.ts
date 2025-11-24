@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { CollisionManager } from '../../../src/utils/CollisionManager';
+import { CollisionManager } from '../../../src/managers/CollisionManager';
 import { createCollidingShipAsteroid, createCollidingBulletAsteroid } from '../../utils/TestHelpers';
 import { SHIP_COLLISION_X, SHIP_COLLISION_RADIUS } from '../../../src/states/PlayingState';
-import { SHIP_X_POSITION } from '../../../src/Constants';
+import { SHIP_X_POSITION } from '../../../src/core/Constants';
 
 describe('Collision Detection', () => {
     describe('Ship-Asteroid Collision Bounds', () => {

@@ -1,4 +1,4 @@
-import type { Game } from '../Game';
+import type { Game } from '../core/Game';
 
 export interface GameState {
     enter(game: Game): void;

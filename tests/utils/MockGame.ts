@@ -1,4 +1,4 @@
-import { Game } from '../../src/Game';
+import { Game } from '../../src/core/Game';
 import { GameState } from '../../src/interfaces/GameState';
 
 export class MockGame implements Partial<Game> {

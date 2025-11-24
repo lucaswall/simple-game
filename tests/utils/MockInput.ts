@@ -1,4 +1,4 @@
-import { Input } from '../../src/Input';
+import { Input } from '../../src/core/Input';
 
 export class MockInput extends Input {
     constructor() {

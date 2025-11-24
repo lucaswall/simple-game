@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Asteroid } from '../../../src/Asteroid';
-import { GAME_WIDTH } from '../../../src/Constants';
+import { Asteroid } from '../../../src/actors/Asteroid';
+import { GAME_WIDTH } from '../../../src/core/Constants';
 import { ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED } from '../../../src/states/PlayingState';
 
 describe('Asteroid', () => {

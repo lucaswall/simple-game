@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CollisionManager } from '../../../src/utils/CollisionManager';
+import { CollisionManager } from '../../../src/managers/CollisionManager';
 import { CollisionBounds } from '../../../src/interfaces/Collidable';
 
 describe('CollisionManager', () => {

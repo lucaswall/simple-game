@@ -27,3 +27,4 @@ export class Input {
         this.keys.Escape = false;
     }
 }
+

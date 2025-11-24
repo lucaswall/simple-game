@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Bullet } from '../../../src/Bullet';
-import { GAME_WIDTH } from '../../../src/Constants';
+import { Bullet } from '../../../src/actors/Bullet';
+import { GAME_WIDTH } from '../../../src/core/Constants';
 import { BULLET_SPEED } from '../../../src/states/PlayingState';
 
 describe('Bullet', () => {

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Bullet } from '../../../src/Bullet';
-import { Asteroid } from '../../../src/Asteroid';
-import { Ship } from '../../../src/Ship';
+import { Bullet } from '../../../src/actors/Bullet';
+import { Asteroid } from '../../../src/actors/Asteroid';
+import { Ship } from '../../../src/actors/Ship';
 import { MockInput } from '../../utils/MockInput';
 import { MockGame } from '../../utils/MockGame';
-import { ParticleManager } from '../../../src/ParticleManager';
+import { ParticleManager } from '../../../src/managers/ParticleManager';
 import { CollisionContext } from '../../../src/interfaces/Collidable';
 
 describe('Bullet Collision', () => {
