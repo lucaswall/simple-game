@@ -12,6 +12,7 @@ interface Star {
 
 export class Starfield implements Actor {
     private stars: Star[] = [];
+    private speedMultiplier = 1;
 
     constructor() {
         for (let i = 0; i < STAR_COUNT; i++) {
@@ -27,12 +28,16 @@ export class Starfield implements Actor {
 
     update(deltaTime: number): void {
         this.stars.forEach(star => {
-            star.x -= star.speed * deltaTime;
+            star.x -= star.speed * this.speedMultiplier * deltaTime;
             if (star.x < 0) {
                 star.x = GAME_WIDTH;
                 star.y = Math.random() * PLAY_AREA_HEIGHT;
             }
         });
+    }
+
+    setSpeedMultiplier(multiplier: number): void {
+        this.speedMultiplier = Math.max(0.2, multiplier);
     }
 
     draw(ctx: CanvasRenderingContext2D): void {
