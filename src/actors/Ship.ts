@@ -26,6 +26,9 @@ export class Ship implements Collidable {
     collisionEnabled: boolean = true;
     private propulsionParticles: PropulsionParticle[] = [];
     private particleSpawnTimer: number = 0;
+    private propulsionIntensity = 1;
+    private tilt = 0;
+    private targetTilt = 0;
     
     // Weapon overheating system
     heat: number = 0; // Heat level from 0 to 10
@@ -42,6 +45,10 @@ export class Ship implements Collidable {
 
         // Update weapon overheating system
         this.updateWeaponHeat(deltaTime);
+
+        // Ease tilt toward the target for smoother banking
+        const tiltLerp = Math.min(1, deltaTime * 8);
+        this.tilt += (this.targetTilt - this.tilt) * tiltLerp;
 
         // Update input reference Y for touch detection
         this.input.setReferenceY(this.y);
@@ -71,6 +78,14 @@ export class Ship implements Collidable {
 
         // Update propulsion particles
         this.updatePropulsionParticles(deltaTime);
+    }
+
+    setPropulsionIntensity(intensity: number): void {
+        this.propulsionIntensity = Math.max(0.25, intensity);
+    }
+
+    setTiltTarget(angle: number): void {
+        this.targetTilt = angle;
     }
 
     private updateWeaponHeat(deltaTime: number): void {
@@ -131,7 +146,7 @@ export class Ship implements Collidable {
 
         // Spawn new particles
         this.particleSpawnTimer += deltaTime;
-        const spawnRate = 0.02; // Spawn a particle every 0.02 seconds (50 particles per second)
+        const spawnRate = 0.02 / Math.max(0.6, this.propulsionIntensity); // Scale spawn rate with intensity
         while (this.particleSpawnTimer >= spawnRate) {
             this.particleSpawnTimer -= spawnRate;
             
@@ -155,9 +170,9 @@ export class Ship implements Collidable {
 
     private createPropulsionParticle(x: number, y: number): void {
         // Particles move backward (to the left) with some randomness
-        const baseSpeed = 150; // Base speed backward
-        const speedVariation = 50; // Random speed variation
-        const angleVariation = 0.3; // Random angle variation in radians
+        const baseSpeed = 150 * this.propulsionIntensity; // Base speed backward
+        const speedVariation = 60 * this.propulsionIntensity; // Random speed variation
+        const angleVariation = 0.35; // Random angle variation in radians
         
         const angle = Math.PI + (Math.random() - 0.5) * angleVariation; // Mostly backward with slight variation
         const speed = baseSpeed + Math.random() * speedVariation;
@@ -167,9 +182,9 @@ export class Ship implements Collidable {
             y: y + (Math.random() - 0.5) * 3, // Slight vertical offset
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            life: 0.3 + Math.random() * 0.2, // 0.3 to 0.5 seconds
+            life: 0.28 + Math.random() * 0.22, // 0.28 to 0.5 seconds
             maxLife: 0.5,
-            size: 2 + Math.random() * 3 // 2 to 5 pixels
+            size: (2 + Math.random() * 3) * (0.8 + this.propulsionIntensity * 0.3) // Scale with intensity
         });
     }
 
@@ -188,6 +203,11 @@ export class Ship implements Collidable {
         const wingWidth = SHIP_SIZE * 0.15;
 
         ctx.save();
+
+        // Apply tilt around the ship's center
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.tilt);
+        ctx.translate(-this.x, -this.y);
 
         // Main body (white)
         ctx.fillStyle = '#fff';
