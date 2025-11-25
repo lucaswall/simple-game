@@ -4,8 +4,8 @@ import { Ship } from '../actors/Ship';
 import { Starfield } from '../core/Starfield';
 import { Bullet } from '../actors/Bullet';
 import { Input } from '../core/Input';
-import { PlayingState } from './PlayingState';
-import { GAME_HEIGHT, GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
+import { PlayingState, PLAY_AREA_HEIGHT } from './PlayingState';
+import { GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 
 const INTRO_START_X = -100;
 const INTRO_DURATION = 2.3; // Seconds for the full single-curve animation
@@ -51,7 +51,6 @@ export class IntroState implements GameState {
 
     private resetIntro(ctx?: CanvasRenderingContext2D): void {
         const canvasWidth = ctx?.canvas?.width ?? GAME_WIDTH;
-        const canvasHeight = ctx?.canvas?.height ?? GAME_HEIGHT;
 
         const dynamicOvershoot = canvasWidth * OVERSHOOT_RATIO;
         this.overshootDistance = Math.min(MAX_OVERSHOOT, Math.max(MIN_OVERSHOOT, dynamicOvershoot));
@@ -64,8 +63,7 @@ export class IntroState implements GameState {
         this.ship.visible = true;
         this.ship.controllable = false;
         this.ship.x = INTRO_START_X;
-        this.ship.y = canvasHeight / 2 - UI_HEIGHT; // Center vertically in play area
-        this.ship.setTiltTarget(0);
+        this.ship.y = PLAY_AREA_HEIGHT / 2; // Center vertically in play area
         this.ship.setPropulsionIntensity(1.2);
 
         this.starfield.setSpeedMultiplier(1.4);
@@ -96,10 +94,6 @@ export class IntroState implements GameState {
             this.previousX = newX;
             this.ship.x = newX;
 
-            // Secondary motion: slight bank proportional to velocity
-            const tilt = Math.max(-0.35, Math.min(0.2, -velocityX * 0.0025));
-            this.ship.setTiltTarget(tilt);
-
             // Boost thruster particles while moving quickly, easing back near settle
             const thrustIntensity = 1 + Math.min(1.2, Math.abs(velocityX) / 280);
             this.ship.setPropulsionIntensity(thrustIntensity);
@@ -112,14 +106,13 @@ export class IntroState implements GameState {
             if (this.timer >= INTRO_DURATION) {
                 this.isSettled = true;
                 this.ship.x = SHIP_X_POSITION;
-                this.ship.setTiltTarget(0);
+                this.ship.y = PLAY_AREA_HEIGHT / 2;
                 this.ship.setPropulsionIntensity(1);
                 this.starfield.setSpeedMultiplier(1);
             }
         } else {
             this.settleTimer += deltaTime;
-            // Gentle drift back to neutral tilt and normal propulsion
-            this.ship.setTiltTarget(0);
+            // Gentle drift back to normal propulsion
             this.ship.setPropulsionIntensity(1);
             this.starfield.setSpeedMultiplier(1);
 

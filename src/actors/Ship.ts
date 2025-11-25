@@ -27,8 +27,6 @@ export class Ship implements Collidable {
     private propulsionParticles: PropulsionParticle[] = [];
     private particleSpawnTimer: number = 0;
     private propulsionIntensity = 1;
-    private tilt = 0;
-    private targetTilt = 0;
     
     // Weapon overheating system
     heat: number = 0; // Heat level from 0 to 10
@@ -45,10 +43,6 @@ export class Ship implements Collidable {
 
         // Update weapon overheating system
         this.updateWeaponHeat(deltaTime);
-
-        // Ease tilt toward the target for smoother banking
-        const tiltLerp = Math.min(1, deltaTime * 8);
-        this.tilt += (this.targetTilt - this.tilt) * tiltLerp;
 
         // Update input reference Y for touch detection
         this.input.setReferenceY(this.y);
@@ -82,10 +76,6 @@ export class Ship implements Collidable {
 
     setPropulsionIntensity(intensity: number): void {
         this.propulsionIntensity = Math.max(0.25, intensity);
-    }
-
-    setTiltTarget(angle: number): void {
-        this.targetTilt = angle;
     }
 
     private updateWeaponHeat(deltaTime: number): void {
@@ -202,13 +192,6 @@ export class Ship implements Collidable {
         const wingLength = SHIP_SIZE * 0.6;
         const wingWidth = SHIP_SIZE * 0.15;
 
-        ctx.save();
-
-        // Apply tilt around the ship's center
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.tilt);
-        ctx.translate(-this.x, -this.y);
-
         // Main body (white)
         ctx.fillStyle = '#fff';
         ctx.beginPath();
@@ -268,7 +251,7 @@ export class Ship implements Collidable {
         ctx.lineTo(backX - wingLength * 0.8, centerY + halfSize * 0.4);
         ctx.stroke();
 
-        ctx.restore();
+        // No canvas rotation is applied; ship remains upright
     }
 
     private drawPropulsionParticles(ctx: CanvasRenderingContext2D): void {
