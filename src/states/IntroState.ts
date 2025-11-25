@@ -5,7 +5,7 @@ import { Starfield } from '../core/Starfield';
 import { Bullet } from '../actors/Bullet';
 import { Input } from '../core/Input';
 import { PlayingState, PLAY_AREA_HEIGHT } from './PlayingState';
-import { GAME_HEIGHT, GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
+import { GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 
 const INTRO_START_X = -100;
 const INTRO_DURATION = 2.3; // Seconds for the full single-curve animation
@@ -51,7 +51,6 @@ export class IntroState implements GameState {
 
     private resetIntro(ctx?: CanvasRenderingContext2D): void {
         const canvasWidth = ctx?.canvas?.width ?? GAME_WIDTH;
-        const canvasHeight = ctx?.canvas?.height ?? GAME_HEIGHT;
 
         const dynamicOvershoot = canvasWidth * OVERSHOOT_RATIO;
         this.overshootDistance = Math.min(MAX_OVERSHOOT, Math.max(MIN_OVERSHOOT, dynamicOvershoot));
