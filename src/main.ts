@@ -161,15 +161,19 @@ function resizeCanvas() {
     // Use window dimensions to account for address bar
     const containerWidth = window.innerWidth;
     const containerHeight = window.innerHeight;
+
+    // Leave room for the repo link row so it stays visible on all screens
+    const linkAllowance = 64;
     
     // Maintain aspect ratio
     const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
     let displayWidth = containerWidth;
     let displayHeight = containerWidth / aspectRatio;
     
-    if (displayHeight > containerHeight) {
-        displayHeight = containerHeight;
-        displayWidth = containerHeight * aspectRatio;
+    const maxHeight = Math.max(containerHeight - linkAllowance, 0);
+    if (displayHeight > maxHeight) {
+        displayHeight = maxHeight;
+        displayWidth = maxHeight * aspectRatio;
     }
     
     canvas.style.width = `${displayWidth}px`;
