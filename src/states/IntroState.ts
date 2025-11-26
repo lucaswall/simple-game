@@ -8,11 +8,13 @@ import { PlayingState, PLAY_AREA_HEIGHT } from './PlayingState';
 import { GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 
 const INTRO_START_X = -100;
+const INTRO_DELAY = 2; // Seconds before the ship begins its entrance
 const INTRO_DURATION = 2.3; // Seconds for the full single-curve animation
 const INTRO_SETTLE_PAUSE = 0.25; // Seconds to pause after settling before handing control
 const MIN_OVERSHOOT = 170; // Minimum overshoot distance in pixels
 const MAX_OVERSHOOT = 340; // Maximum overshoot distance in pixels
 const OVERSHOOT_RATIO = 0.18; // Overshoot distance as a fraction of canvas width
+const INTRO_STARFIELD_BOOST = 2.2; // Faster parallax while the ship is staged off-screen
 
 function easeOutCubic(t: number): number {
     return 1 - Math.pow(1 - t, 3);
@@ -38,6 +40,7 @@ export class IntroState implements GameState {
 
     private timer = 0;
     private settleTimer = 0;
+    private introDelayTimer = 0;
     private overshootDistance = MIN_OVERSHOOT;
     private isSettled = false;
     private previousX = INTRO_START_X;
@@ -57,6 +60,7 @@ export class IntroState implements GameState {
 
         this.timer = 0;
         this.settleTimer = 0;
+        this.introDelayTimer = 0;
         this.isSettled = false;
         this.previousX = INTRO_START_X;
 
@@ -66,7 +70,7 @@ export class IntroState implements GameState {
         this.ship.y = PLAY_AREA_HEIGHT / 2; // Center vertically in play area
         this.ship.setPropulsionIntensity(1.2);
 
-        this.starfield.setSpeedMultiplier(1.6);
+        this.starfield.setSpeedMultiplier(INTRO_STARFIELD_BOOST);
 
         // Clear input keys to prevent immediate shooting when Space is used to start the game
         this.input.clearKeys();
@@ -82,6 +86,14 @@ export class IntroState implements GameState {
 
         // Advance intro timer until settled
         if (!this.isSettled) {
+            if (this.introDelayTimer < INTRO_DELAY) {
+                this.introDelayTimer = Math.min(INTRO_DELAY, this.introDelayTimer + deltaTime);
+                this.ship.x = INTRO_START_X;
+                this.ship.setPropulsionIntensity(1.2);
+                this.starfield.setSpeedMultiplier(INTRO_STARFIELD_BOOST);
+                return;
+            }
+
             this.timer = Math.min(INTRO_DURATION, this.timer + deltaTime);
             const t = this.timer / INTRO_DURATION;
 
