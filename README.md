@@ -1,18 +1,18 @@
 # Simple Space Game
 
-A lightweight side-scrolling space shooter built with Vanilla JavaScript and TypeScript. The project is tuned for smooth browser play while keeping the code approachable for learning and experimentation.
+Simple Space Game is a lightweight side-scrolling shooter built with TypeScript and vanilla JavaScript. The project aims to keep controls responsive in the browser while staying small enough for learners to explore.
 
-> **Note:** This project is part of an ongoing assistant tooling evaluation that now includes Google Antigravity, Cursor, Warp, and OpenAI Codex.
+> **Note:** This project is part of an assistant-tooling evaluation. Alongside other helpers, I am also testing **OpenAI Codex** to support development on this repo.
 
 ## How to Play
 - **Move:** Arrow Up / Arrow Down
 - **Shoot:** Spacebar
 - **Pause/Exit:** Escape
-- **Touch input:** Tap or hold the left side to move (above the ship to go up, below to go down) and the right side to fire.
+- **Touch:** Tap or hold the left side to move the ship (above the ship to go up, below to go down) and tap the right side to fire.
 
 ## Features
-- Responsive canvas sizing for desktop and mobile devices
-- Keyboard and touch controls with input smoothing
+- Responsive canvas sizing for desktop and mobile
+- Keyboard and touch controls with smoothing for steady movement
 - Orientation guard that prompts mobile players to rotate to landscape
 - Lightweight build pipeline powered by Vite
 
@@ -35,7 +35,6 @@ A lightweight side-scrolling space shooter built with Vanilla JavaScript and Typ
    ```
 
 ## Project Notes
-- Source lives in `src/` with the entrypoint at `src/main.ts`.
-- Tests are colocated under `tests/` and use Vitest.
-- The game canvas and overlay elements are defined in `index.html` and styled via `src/style.css`.
-
+- Source files live in `src/` with the entrypoint at `src/main.ts`.
+- Tests are colocated under `tests/` and run through Vitest.
+- The game canvas and overlay elements are defined in `index.html` and styled in `src/style.css`.

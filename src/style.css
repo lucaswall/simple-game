@@ -88,8 +88,6 @@ html {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  position: relative;
-  padding-bottom: 2.75rem;
 }
 
 canvas {
@@ -102,13 +100,19 @@ canvas {
 }
 
 .repo-link {
-  position: absolute;
-  bottom: 0.75rem;
-  right: 0.75rem;
   font-size: 0.95rem;
   color: #8bc4ff;
   text-decoration: none;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+}
+
+.repo-link-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  margin-top: 0.25rem;
+  box-sizing: border-box;
 }
 
 .repo-link:hover,
