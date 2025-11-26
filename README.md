@@ -2,7 +2,7 @@
 
 Simple Space Game is a lightweight side-scrolling shooter built with TypeScript and vanilla JavaScript. The project aims to keep controls responsive in the browser while staying small enough for learners to explore.
 
-> **Note:** This project is part of an assistant-tooling evaluation. Alongside other helpers, I am also testing **OpenAI Codex** to support development on this repo.
+> **Note:** This project is part of an assistant-tooling evaluation. Vibe coding with Cursor, Warp, Google Antigravity, and OpenAI Codex to support development on this repo.
 
 ## How to Play
 - **Move:** Arrow Up / Arrow Down
