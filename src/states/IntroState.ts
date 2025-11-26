@@ -14,6 +14,7 @@ const INTRO_SETTLE_PAUSE = 0.25; // Seconds to pause after settling before handi
 const MIN_OVERSHOOT = 170; // Minimum overshoot distance in pixels
 const MAX_OVERSHOOT = 340; // Maximum overshoot distance in pixels
 const OVERSHOOT_RATIO = 0.18; // Overshoot distance as a fraction of canvas width
+const INTRO_STARFIELD_BOOST = 2.2; // Faster parallax while the ship is staged off-screen
 
 function easeOutCubic(t: number): number {
     return 1 - Math.pow(1 - t, 3);
@@ -69,7 +70,7 @@ export class IntroState implements GameState {
         this.ship.y = PLAY_AREA_HEIGHT / 2; // Center vertically in play area
         this.ship.setPropulsionIntensity(1.2);
 
-        this.starfield.setSpeedMultiplier(1.6);
+        this.starfield.setSpeedMultiplier(INTRO_STARFIELD_BOOST);
 
         // Clear input keys to prevent immediate shooting when Space is used to start the game
         this.input.clearKeys();
@@ -89,7 +90,7 @@ export class IntroState implements GameState {
                 this.introDelayTimer = Math.min(INTRO_DELAY, this.introDelayTimer + deltaTime);
                 this.ship.x = INTRO_START_X;
                 this.ship.setPropulsionIntensity(1.2);
-                this.starfield.setSpeedMultiplier(1.6);
+                this.starfield.setSpeedMultiplier(INTRO_STARFIELD_BOOST);
                 return;
             }
 
