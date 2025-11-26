@@ -10,9 +10,9 @@ import { GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 const INTRO_START_X = -100;
 const INTRO_DURATION = 2.3; // Seconds for the full single-curve animation
 const INTRO_SETTLE_PAUSE = 0.25; // Seconds to pause after settling before handing control
-const MIN_OVERSHOOT = 120; // Minimum overshoot distance in pixels
-const MAX_OVERSHOOT = 260; // Maximum overshoot distance in pixels
-const OVERSHOOT_RATIO = 0.1; // Overshoot distance as a fraction of canvas width
+const MIN_OVERSHOOT = 170; // Minimum overshoot distance in pixels
+const MAX_OVERSHOOT = 340; // Maximum overshoot distance in pixels
+const OVERSHOOT_RATIO = 0.18; // Overshoot distance as a fraction of canvas width
 
 function easeOutCubic(t: number): number {
     return 1 - Math.pow(1 - t, 3);
@@ -66,7 +66,7 @@ export class IntroState implements GameState {
         this.ship.y = PLAY_AREA_HEIGHT / 2; // Center vertically in play area
         this.ship.setPropulsionIntensity(1.2);
 
-        this.starfield.setSpeedMultiplier(1.4);
+        this.starfield.setSpeedMultiplier(1.6);
 
         // Clear input keys to prevent immediate shooting when Space is used to start the game
         this.input.clearKeys();
@@ -86,7 +86,7 @@ export class IntroState implements GameState {
             const t = this.timer / INTRO_DURATION;
 
             const travelDistance = SHIP_X_POSITION - INTRO_START_X;
-            const overshootFactor = (this.overshootDistance / Math.max(travelDistance, 1)) * 0.9;
+            const overshootFactor = (this.overshootDistance / Math.max(travelDistance, 1)) * 1.2;
             const curveValue = introCurve(t, overshootFactor);
             const newX = INTRO_START_X + travelDistance * curveValue;
 
@@ -98,9 +98,12 @@ export class IntroState implements GameState {
             const thrustIntensity = 1 + Math.min(1.2, Math.abs(velocityX) / 280);
             this.ship.setPropulsionIntensity(thrustIntensity);
 
-            // Background parallax speeds up with motion, returns to normal near the end
-            const parallaxBoost = 1 + Math.min(0.9, Math.abs(velocityX) / 500);
-            const settleBlend = 1 - Math.pow(t, 2);
+            // Background parallax speeds up with forward motion and during the overshoot,
+            // then eases back to normal as the ship slides into position
+            const forwardMomentum = Math.max(0, velocityX);
+            const returnMomentum = Math.max(0, -velocityX);
+            const parallaxBoost = 1 + Math.min(1.8, forwardMomentum / 200);
+            const settleBlend = Math.max(0, 1 - Math.min(1, returnMomentum / 280));
             this.starfield.setSpeedMultiplier(1 + (parallaxBoost - 1) * settleBlend);
 
             if (this.timer >= INTRO_DURATION) {
