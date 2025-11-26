@@ -9,12 +9,14 @@ import { GAME_WIDTH, SHIP_X_POSITION, UI_HEIGHT } from '../core/Constants';
 
 const INTRO_START_X = -100;
 const INTRO_DELAY = 2; // Seconds before the ship begins its entrance
+const INTRO_COUNTDOWN_DURATION = 2; // Seconds for the 3-2-1 countdown during the pause
 const INTRO_DURATION = 2.3; // Seconds for the full single-curve animation
 const INTRO_SETTLE_PAUSE = 0.25; // Seconds to pause after settling before handing control
 const MIN_OVERSHOOT = 170; // Minimum overshoot distance in pixels
 const MAX_OVERSHOOT = 340; // Maximum overshoot distance in pixels
 const OVERSHOOT_RATIO = 0.18; // Overshoot distance as a fraction of canvas width
-const INTRO_STARFIELD_BOOST = 2.2; // Faster parallax while the ship is staged off-screen
+const INTRO_STARFIELD_BOOST = 3.2; // Faster parallax while the ship is staged off-screen and entering
+const RETURN_SLOW_DURATION = 0.65; // Seconds to ease the starfield back after the overshoot
 
 function easeOutCubic(t: number): number {
     return 1 - Math.pow(1 - t, 3);
@@ -44,6 +46,7 @@ export class IntroState implements GameState {
     private overshootDistance = MIN_OVERSHOOT;
     private isSettled = false;
     private previousX = INTRO_START_X;
+    private returnSlowProgress = 0;
 
     constructor(input: Input) {
         this.input = input;
@@ -63,6 +66,7 @@ export class IntroState implements GameState {
         this.introDelayTimer = 0;
         this.isSettled = false;
         this.previousX = INTRO_START_X;
+        this.returnSlowProgress = 0;
 
         this.ship.visible = true;
         this.ship.controllable = false;
@@ -110,13 +114,16 @@ export class IntroState implements GameState {
             const thrustIntensity = 1 + Math.min(1.2, Math.abs(velocityX) / 280);
             this.ship.setPropulsionIntensity(thrustIntensity);
 
-            // Background parallax speeds up with forward motion and during the overshoot,
-            // then eases back to normal as the ship slides into position
-            const forwardMomentum = Math.max(0, velocityX);
-            const returnMomentum = Math.max(0, -velocityX);
-            const parallaxBoost = 1 + Math.min(1.8, forwardMomentum / 200);
-            const settleBlend = Math.max(0, 1 - Math.min(1, returnMomentum / 280));
-            this.starfield.setSpeedMultiplier(1 + (parallaxBoost - 1) * settleBlend);
+            // Keep the starfield racing during the pause and forward motion, then start easing
+            // back to normal once the ship begins its return from the overshoot
+            if (velocityX >= 0) {
+                this.returnSlowProgress = 0;
+                this.starfield.setSpeedMultiplier(INTRO_STARFIELD_BOOST);
+            } else {
+                this.returnSlowProgress = Math.min(1, this.returnSlowProgress + deltaTime / RETURN_SLOW_DURATION);
+                const easedSpeed = INTRO_STARFIELD_BOOST - (INTRO_STARFIELD_BOOST - 1) * this.returnSlowProgress;
+                this.starfield.setSpeedMultiplier(Math.max(1, easedSpeed));
+            }
 
             if (this.timer >= INTRO_DURATION) {
                 this.isSettled = true;
@@ -155,6 +162,36 @@ export class IntroState implements GameState {
         this.starfield.draw(ctx);
         this.bullets.forEach(b => b.draw(ctx));
         this.ship.draw(ctx);
+
+        // Countdown overlay during the intro pause
+        if (!this.isSettled && this.introDelayTimer < INTRO_DELAY) {
+            const countdownTime = Math.min(this.introDelayTimer, INTRO_COUNTDOWN_DURATION);
+            const segmentDuration = INTRO_COUNTDOWN_DURATION / 3;
+            const segmentIndex = Math.min(2, Math.floor(countdownTime / segmentDuration));
+            const digits = ['3', '2', '1'];
+            const digit = digits[segmentIndex];
+            const segmentProgress = (countdownTime % segmentDuration) / Math.max(segmentDuration, 0.0001);
+
+            // Scale and fade for a punchy pop effect
+            const scale = 1 + (1 - segmentProgress) * 0.8;
+            const alpha = 0.25 + (1 - segmentProgress) * 0.75;
+
+            const centerX = ctx.canvas.width / 2;
+            const centerY = ctx.canvas.height / 2;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(scale, scale);
+
+            ctx.font = 'bold 120px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
+            ctx.shadowColor = 'rgba(0, 173, 255, 0.7)';
+            ctx.shadowBlur = 18;
+            ctx.fillText(digit, 0, 0);
+            ctx.restore();
+        }
 
         ctx.restore();
     }
