@@ -57,6 +57,12 @@ export const ASTEROID_EXPLODING_CHANCE_START = 0.1; // 1 in 10 chance at 1 minut
 export const ASTEROID_EXPLODING_CHANCE_END = 0.2; // 2 in 10 chance at 3 minutes
 export const ASTEROID_EXPLODING_START_TIME = 60; // Seconds - when exploding asteroids start appearing
 export const ASTEROID_EXPLODING_RAMP_TIME = 180; // Seconds - time to reach max chance (3 minutes)
+export const ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MIN = 1.0; // Minimum delay before auto-explosion for large asteroids (seconds)
+export const ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MAX = 1.3; // Maximum delay before auto-explosion for large asteroids (seconds)
+export const ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MIN = 1.3; // Minimum delay before auto-explosion for medium asteroids (seconds)
+export const ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MAX = 1.7; // Maximum delay before auto-explosion for medium asteroids (seconds)
+export const ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MIN = 1.7; // Minimum delay before auto-explosion for small asteroids (seconds)
+export const ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MAX = 2.0; // Maximum delay before auto-explosion for small asteroids (seconds)
 
 // Particle constants (used only in gameplay)
 export const PARTICLE_COUNT_PER_EXPLOSION = 30;
@@ -157,7 +163,7 @@ export class PlayingState implements GameState {
             // Update environment during explosion (with scaled time)
             this.starfield.update(deltaTime);
             this.updateBullets(deltaTime);
-            this.updateAsteroids(deltaTime);
+            this.updateAsteroids(game, deltaTime);
             this.particleManager.update(deltaTime);
 
             // When explosion finishes, respawn or game over
@@ -224,7 +230,7 @@ export class PlayingState implements GameState {
         this.starfield.update(deltaTime);
         this.ship.update(deltaTime);
         this.updateBullets(deltaTime);
-        this.updateAsteroids(deltaTime);
+        this.updateAsteroids(game, deltaTime);
         this.particleManager.update(deltaTime);
         this.checkCollisions(game);
     }
@@ -514,7 +520,7 @@ export class PlayingState implements GameState {
         }
     }
 
-    private updateAsteroids(deltaTime: number) {
+    private updateAsteroids(game: Game, deltaTime: number) {
         // Calculate dynamic spawn interval based on game time (piecewise linear)
         let currentSpawnInterval: number;
         if (this.gameTime <= 60) {
@@ -590,6 +596,42 @@ export class PlayingState implements GameState {
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
             const a = this.asteroids[i];
             a.update(deltaTime);
+            
+            // Check if exploding asteroid should auto-explode
+            if (a.shouldAutoExplode()) {
+                const context: CollisionContext = {
+                    game: game,
+                    particleManager: this.particleManager,
+                    onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
+                        const ast = asteroid as Asteroid;
+                        if (ast.asteroidSize === AsteroidSize.SMALL) {
+                            this.score += ASTEROID_SMALL_POINTS;
+                        }
+                        const index = this.asteroids.indexOf(ast);
+                        if (index !== -1) {
+                            this.asteroids.splice(index, 1);
+                        }
+                    },
+                    onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
+                        const parent = parentAsteroid as Asteroid;
+                        if (parent.asteroidSize === AsteroidSize.LARGE) {
+                            this.score += ASTEROID_LARGE_POINTS;
+                        } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
+                            this.score += ASTEROID_MEDIUM_POINTS;
+                        }
+                        const index = this.asteroids.indexOf(parent);
+                        if (index !== -1) {
+                            this.asteroids.splice(index, 1);
+                        }
+                        this.asteroids.push(...(newAsteroids as Asteroid[]));
+                    },
+                    onExplosion: (x: number, y: number, radius: number) => {
+                        this.handleExplosion(x, y, radius, game);
+                    }
+                };
+                a.triggerExplosion(context);
+            }
+            
             if (!a.active) {
                 this.asteroids.splice(i, 1);
             }

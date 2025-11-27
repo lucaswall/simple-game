@@ -2,7 +2,7 @@ import { Collidable, CollisionBounds, CollisionContext } from '../interfaces/Col
 import { GAME_WIDTH } from '../core/Constants';
 import { Bullet } from './Bullet';
 import { Ship } from './Ship';
-import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_LARGE_SIZE, ASTEROID_MEDIUM_SIZE, ASTEROID_SMALL_SIZE, ASTEROID_LARGE_SPLIT_ANGLE_MIN, ASTEROID_LARGE_SPLIT_ANGLE_MAX, ASTEROID_MEDIUM_SPLIT_ANGLE_MIN, ASTEROID_MEDIUM_SPLIT_ANGLE_MAX, ASTEROID_FLASH_INTERVAL, ASTEROID_EXPLOSION_RADIUS_SMALL, ASTEROID_EXPLOSION_RADIUS_MEDIUM, ASTEROID_EXPLOSION_RADIUS_LARGE } from '../states/PlayingState';
+import { ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, ASTEROID_SPAWN_Y_MARGIN, ASTEROID_SPAWN_Y_OFFSET, ASTEROID_MIN_VERTICES, ASTEROID_MAX_VERTICES, ASTEROID_RADIUS_MIN_FACTOR, ASTEROID_RADIUS_MAX_FACTOR, ASTEROID_COLOR, PLAY_AREA_HEIGHT, SHAKE_INTENSITY_ASTEROID_HIT, ASTEROID_HIT_FREEZE_DURATION, ASTEROID_LARGE_SIZE, ASTEROID_MEDIUM_SIZE, ASTEROID_SMALL_SIZE, ASTEROID_LARGE_SPLIT_ANGLE_MIN, ASTEROID_LARGE_SPLIT_ANGLE_MAX, ASTEROID_MEDIUM_SPLIT_ANGLE_MIN, ASTEROID_MEDIUM_SPLIT_ANGLE_MAX, ASTEROID_FLASH_INTERVAL, ASTEROID_EXPLOSION_RADIUS_SMALL, ASTEROID_EXPLOSION_RADIUS_MEDIUM, ASTEROID_EXPLOSION_RADIUS_LARGE, ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MIN, ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MAX, ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MIN, ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MAX, ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MIN, ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MAX } from '../states/PlayingState';
 
 export enum AsteroidSize {
     SMALL = 'small',
@@ -23,6 +23,8 @@ export class Asteroid implements Collidable {
     collisionEnabled: boolean = true;
     isExploding: boolean = false; // Whether this asteroid explodes when hit
     private flashTimer: number = 0; // Timer for red flashing effect
+    private hasReachedMiddle: boolean = false; // Whether asteroid has reached middle of screen
+    private explosionTimer: number | null = null; // Countdown timer for auto-explosion (null if not started)
 
     constructor(x?: number, y?: number, sizeType?: AsteroidSize, velocityX?: number, velocityY?: number, largeRatio: number = 0.1, angleOffsetDegrees?: number, isExploding: boolean = false) {
         // Default constructor creates a random size asteroid at spawn position
@@ -110,6 +112,35 @@ export class Asteroid implements Collidable {
             if (this.flashTimer >= ASTEROID_FLASH_INTERVAL * 2) {
                 this.flashTimer = 0;
             }
+            
+            // Check if asteroid has reached middle of screen
+            if (!this.hasReachedMiddle && this.x <= GAME_WIDTH / 2) {
+                this.hasReachedMiddle = true;
+                // Calculate explosion delay based on size: 1-2 seconds
+                // Larger asteroids explode faster (closer to 1 second)
+                // Smaller asteroids explode slower (closer to 2 seconds)
+                let minDelay: number;
+                let maxDelay: number;
+                if (this.asteroidSize === AsteroidSize.LARGE) {
+                    minDelay = ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MIN;
+                    maxDelay = ASTEROID_AUTO_EXPLODE_DELAY_LARGE_MAX;
+                } else if (this.asteroidSize === AsteroidSize.MEDIUM) {
+                    minDelay = ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MIN;
+                    maxDelay = ASTEROID_AUTO_EXPLODE_DELAY_MEDIUM_MAX;
+                } else {
+                    minDelay = ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MIN;
+                    maxDelay = ASTEROID_AUTO_EXPLODE_DELAY_SMALL_MAX;
+                }
+                this.explosionTimer = Math.random() * (maxDelay - minDelay) + minDelay;
+            }
+            
+            // Update explosion timer
+            if (this.explosionTimer !== null) {
+                this.explosionTimer -= deltaTime;
+                if (this.explosionTimer <= 0) {
+                    this.explosionTimer = 0; // Mark as ready to explode
+                }
+            }
         }
         
         // Check if asteroid is off screen
@@ -117,6 +148,11 @@ export class Asteroid implements Collidable {
             this.y + this.size < 0 || this.y - this.size > PLAY_AREA_HEIGHT) {
             this.active = false;
         }
+    }
+    
+    // Check if this exploding asteroid should auto-explode
+    shouldAutoExplode(): boolean {
+        return this.isExploding && this.explosionTimer !== null && this.explosionTimer <= 0;
     }
 
     draw(ctx: CanvasRenderingContext2D): void {
@@ -212,7 +248,7 @@ export class Asteroid implements Collidable {
         // Ship collision is handled by Ship.onCollision
     }
 
-    private triggerExplosion(context: CollisionContext): void {
+    triggerExplosion(context: CollisionContext): void {
         // Determine explosion radius based on size
         let explosionRadius: number;
         if (this.asteroidSize === AsteroidSize.LARGE) {
