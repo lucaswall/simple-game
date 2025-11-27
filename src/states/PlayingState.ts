@@ -114,6 +114,7 @@ export class PlayingState implements GameState {
     private debugMode: boolean = false;
     private debugKeyPressed: boolean = false; // Track if D key was pressed to toggle on keydown
     private fastForwardKeyPressed: boolean = false; // Track if F key was pressed to advance time
+    private currentGame: Game | null = null;
 
     constructor(input: Input) {
         this.input = input;
@@ -124,6 +125,7 @@ export class PlayingState implements GameState {
     }
 
     enter(_game: Game): void {
+        this.currentGame = _game;
         // Entities are either initialized in constructor or transferred from IntroState
         this.ship.visible = true;
         this.ship.controllable = true;
@@ -293,7 +295,11 @@ export class PlayingState implements GameState {
         CollisionManager.checkCollisions(collidables, context);
     }
 
-    private handleExplosion(explosionX: number, explosionY: number, radius: number, game: Game): void {
+    private handleExplosion(explosionX: number, explosionY: number, radius: number, game?: Game): void {
+        const activeGame = game ?? this.currentGame;
+        if (!activeGame) {
+            return;
+        }
         // Check if ship is in explosion radius
         const shipBounds = this.ship.getCollisionBounds();
         const shipCenterX = shipBounds.centerX ?? 0;
@@ -303,11 +309,11 @@ export class PlayingState implements GameState {
         const dx = explosionX - shipCenterX;
         const dy = explosionY - shipCenterY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < radius + shipRadius && this.ship.collisionEnabled && this.invincibilityTimer <= 0) {
             // Ship is in explosion radius - destroy it
             this.ship.collisionEnabled = false;
-            this.startExplosion(game);
+            this.startExplosion(activeGame);
         }
         
         // Check all asteroids in explosion radius
@@ -329,7 +335,7 @@ export class PlayingState implements GameState {
                 // Create a real bullet instance for collision (position doesn't matter, just needs to be instanceof Bullet)
                 const fakeBullet = new Bullet(asteroid.x, asteroid.y, 0, 0);
                 asteroid.onCollision(fakeBullet, {
-                    game: game,
+                    game: activeGame,
                     particleManager: this.particleManager,
                     onAsteroidDestroyed: (ast: import('../interfaces/Actor').Actor) => {
                         const a = ast as Asteroid;
@@ -396,9 +402,13 @@ export class PlayingState implements GameState {
         ctx.restore();
     }
 
-    exit(_game: Game): void { }
+    exit(_game: Game): void { this.currentGame = null; }
 
-    private startExplosion(game: Game): void {
+    private startExplosion(game?: Game): void {
+        const activeGame = game ?? this.currentGame;
+        if (!activeGame) {
+            return;
+        }
         const shipCollisionX = this.ship.x - (SHIP_X_POSITION - SHIP_COLLISION_X);
         this.particleManager.createExplosion(shipCollisionX, this.ship.y);
         this.ship.visible = false;
@@ -409,7 +419,7 @@ export class PlayingState implements GameState {
         this.explosionTimer = EXPLOSION_DURATION;
 
         // Enter global slow motion for the duration of the explosion sequence.
-        game.setTimeScale(EXPLOSION_TIME_SCALE);
+        activeGame.setTimeScale(EXPLOSION_TIME_SCALE);
     }
 
     private respawnShip(): void {
@@ -520,7 +530,16 @@ export class PlayingState implements GameState {
         }
     }
 
-    private updateAsteroids(game: Game, deltaTime: number) {
+    private updateAsteroids(game: Game, deltaTime: number): void;
+    private updateAsteroids(deltaTime: number): void;
+    private updateAsteroids(gameOrDelta: Game | number, deltaTime?: number) {
+        const activeGame = typeof gameOrDelta === 'number' ? this.currentGame : gameOrDelta;
+        const resolvedDeltaTime = typeof gameOrDelta === 'number' ? gameOrDelta : deltaTime ?? 0;
+
+        if (resolvedDeltaTime === undefined) {
+            return;
+        }
+
         // Calculate dynamic spawn interval based on game time (piecewise linear)
         let currentSpawnInterval: number;
         if (this.gameTime <= 60) {
@@ -555,7 +574,7 @@ export class PlayingState implements GameState {
             (ASTEROID_LARGE_RATIO_END - ASTEROID_LARGE_RATIO_START) * largeRatioProgress;
         
         // Spawn asteroids
-        this.asteroidTimer -= deltaTime;
+        this.asteroidTimer -= resolvedDeltaTime;
         if (this.asteroidTimer <= 0) {
             // Ramp up angled asteroids: 0-5° at 1min, 0-10° at 2min, 0-20° at 3min
             let angleOffset: number | undefined = undefined;
@@ -595,12 +614,12 @@ export class PlayingState implements GameState {
 
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
             const a = this.asteroids[i];
-            a.update(deltaTime);
-            
+            a.update(resolvedDeltaTime);
+
             // Check if exploding asteroid should auto-explode
-            if (a.shouldAutoExplode()) {
+            if (a.shouldAutoExplode() && activeGame) {
                 const context: CollisionContext = {
-                    game: game,
+                    game: activeGame,
                     particleManager: this.particleManager,
                     onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
                         const ast = asteroid as Asteroid;
@@ -626,7 +645,7 @@ export class PlayingState implements GameState {
                         this.asteroids.push(...(newAsteroids as Asteroid[]));
                     },
                     onExplosion: (x: number, y: number, radius: number) => {
-                        this.handleExplosion(x, y, radius, game);
+                        this.handleExplosion(x, y, radius, activeGame);
                     }
                 };
                 a.triggerExplosion(context);
