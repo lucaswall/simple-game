@@ -7,12 +7,18 @@ export class CollisionManager {
     static checkBounds(a: CollisionBounds, b: CollisionBounds): boolean {
         // Circle-circle collision
         if (a.type === 'circle' && b.type === 'circle') {
-            const dx = (a.centerX ?? 0) - (b.centerX ?? 0);
-            const dy = (a.centerY ?? 0) - (b.centerY ?? 0);
+            // Validate required properties - return false if missing instead of silent default
+            if (a.centerX === undefined || a.centerY === undefined || a.radius === undefined ||
+                b.centerX === undefined || b.centerY === undefined || b.radius === undefined) {
+                return false;
+            }
+
+            const dx = a.centerX - b.centerX;
+            const dy = a.centerY - b.centerY;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < ((a.radius ?? 0) + (b.radius ?? 0));
+            return distance < (a.radius + b.radius);
         }
-        
+
         // Add other collision types as needed
         return false;
     }

@@ -144,9 +144,7 @@ export class PlayingState implements GameState {
         this.ship.x = SHIP_X_POSITION;
         this.ship.y = PLAY_AREA_HEIGHT / 2;
         // Reset weapon heat
-        this.ship.heat = 0;
-        this.ship['overheatTimer'] = -1;
-        this.ship['heatCooldownTimer'] = 0;
+        this.ship.resetOverheat();
         // Start asteroid timer with initial spawn interval
         this.asteroidTimer = ASTEROID_SPAWN_INTERVAL_START;
     }
@@ -220,7 +218,7 @@ export class PlayingState implements GameState {
         }
 
         // Update heat bar blink timer
-        if (this.ship.heat >= 10 && this.ship['overheatTimer'] > 0) {
+        if (this.ship.isOverheated()) {
             // Weapon is jammed - blink the heat bar
             this.heatBarBlinkTimer += deltaTime;
         } else {
@@ -251,45 +249,11 @@ export class PlayingState implements GameState {
         collidables.push(...this.asteroids.filter(a => a.active && a.collisionEnabled));
         collidables.push(...this.bullets.filter(b => b.active && b.collisionEnabled));
 
-        // Create collision context
-        const context: CollisionContext = {
-            game: game,
-            particleManager: this.particleManager,
-            onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
-                // Award points for destroying small asteroid
-                const ast = asteroid as Asteroid;
-                if (ast.asteroidSize === AsteroidSize.SMALL) {
-                    this.score += ASTEROID_SMALL_POINTS;
-                }
-                // Remove asteroid from array
-                const index = this.asteroids.indexOf(ast);
-                if (index !== -1) {
-                    this.asteroids.splice(index, 1);
-                }
-            },
-            onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
-                // Award points for splitting asteroid
-                const parent = parentAsteroid as Asteroid;
-                if (parent.asteroidSize === AsteroidSize.LARGE) {
-                    this.score += ASTEROID_LARGE_POINTS;
-                } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
-                    this.score += ASTEROID_MEDIUM_POINTS;
-                }
-                // Remove parent asteroid from array
-                const index = this.asteroids.indexOf(parent);
-                if (index !== -1) {
-                    this.asteroids.splice(index, 1);
-                }
-                // Add new asteroids to array
-                this.asteroids.push(...(newAsteroids as Asteroid[]));
-            },
-            onShipDestroyed: () => {
-                this.startExplosion(game);
-            },
-            onExplosion: (x: number, y: number, radius: number) => {
-                this.handleExplosion(x, y, radius, game);
-            }
-        };
+        // Create collision context using helper method
+        const context = this.createCollisionContext(game, {
+            onShipDestroyed: () => this.startExplosion(game),
+            onExplosion: (x, y, radius) => this.handleExplosion(x, y, radius, game)
+        });
 
         // Check collisions
         CollisionManager.checkCollisions(collidables, context);
@@ -334,33 +298,8 @@ export class PlayingState implements GameState {
                 // Asteroid is in explosion radius - destroy it as if hit by bullet
                 // Create a real bullet instance for collision (position doesn't matter, just needs to be instanceof Bullet)
                 const fakeBullet = new Bullet(asteroid.x, asteroid.y, 0, 0);
-                asteroid.onCollision(fakeBullet, {
-                    game: activeGame,
-                    particleManager: this.particleManager,
-                    onAsteroidDestroyed: (ast: import('../interfaces/Actor').Actor) => {
-                        const a = ast as Asteroid;
-                        if (a.asteroidSize === AsteroidSize.SMALL) {
-                            this.score += ASTEROID_SMALL_POINTS;
-                        }
-                        const index = this.asteroids.indexOf(a);
-                        if (index !== -1) {
-                            this.asteroids.splice(index, 1);
-                        }
-                    },
-                    onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
-                        const parent = parentAsteroid as Asteroid;
-                        if (parent.asteroidSize === AsteroidSize.LARGE) {
-                            this.score += ASTEROID_LARGE_POINTS;
-                        } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
-                            this.score += ASTEROID_MEDIUM_POINTS;
-                        }
-                        const index = this.asteroids.indexOf(parent);
-                        if (index !== -1) {
-                            this.asteroids.splice(index, 1);
-                        }
-                        this.asteroids.push(...(newAsteroids as Asteroid[]));
-                    }
-                });
+                const context = this.createCollisionContext(activeGame);
+                asteroid.onCollision(fakeBullet, context);
             }
         }
     }
@@ -404,6 +343,55 @@ export class PlayingState implements GameState {
 
     exit(_game: Game): void { this.currentGame = null; }
 
+    /**
+     * Create a collision context with standard asteroid handling callbacks.
+     * Reduces code duplication across collision handling methods.
+     */
+    private createCollisionContext(game: Game, options?: {
+        onShipDestroyed?: () => void;
+        onExplosion?: (x: number, y: number, radius: number) => void;
+    }): CollisionContext {
+        return {
+            game: game,
+            particleManager: this.particleManager,
+            onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
+                // Type guard - ensure we're working with an Asteroid
+                if (!(asteroid instanceof Asteroid)) return;
+
+                // Award points for destroying small asteroid
+                if (asteroid.asteroidSize === AsteroidSize.SMALL) {
+                    this.score += ASTEROID_SMALL_POINTS;
+                }
+                // Remove asteroid from array
+                const index = this.asteroids.indexOf(asteroid);
+                if (index !== -1) {
+                    this.asteroids.splice(index, 1);
+                }
+            },
+            onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
+                // Type guard - ensure we're working with an Asteroid
+                if (!(parentAsteroid instanceof Asteroid)) return;
+
+                // Award points for splitting asteroid
+                if (parentAsteroid.asteroidSize === AsteroidSize.LARGE) {
+                    this.score += ASTEROID_LARGE_POINTS;
+                } else if (parentAsteroid.asteroidSize === AsteroidSize.MEDIUM) {
+                    this.score += ASTEROID_MEDIUM_POINTS;
+                }
+                // Remove parent asteroid from array
+                const index = this.asteroids.indexOf(parentAsteroid);
+                if (index !== -1) {
+                    this.asteroids.splice(index, 1);
+                }
+                // Add new asteroids to array (filter to ensure only valid Asteroids)
+                const validAsteroids = newAsteroids.filter((a): a is Asteroid => a instanceof Asteroid);
+                this.asteroids.push(...validAsteroids);
+            },
+            onShipDestroyed: options?.onShipDestroyed,
+            onExplosion: options?.onExplosion
+        };
+    }
+
     private startExplosion(game?: Game): void {
         const activeGame = game ?? this.currentGame;
         if (!activeGame) {
@@ -431,9 +419,7 @@ export class PlayingState implements GameState {
         this.ship.collisionEnabled = false; // Disabled during invincibility
         
         // Reset weapon heat on respawn
-        this.ship.heat = 0;
-        this.ship['overheatTimer'] = -1;
-        this.ship['heatCooldownTimer'] = 0;
+        this.ship.resetOverheat();
         
         // Start invincibility period
         this.invincibilityTimer = INVINCIBILITY_DURATION;
@@ -452,7 +438,7 @@ export class PlayingState implements GameState {
         const BLINK_INTERVAL = 0.15; // Blink every 0.15 seconds
         
         // Check if weapon is jammed (overheated and in cooldown)
-        const isJammed = this.ship.heat >= 10 && this.ship['overheatTimer'] > 0;
+        const isJammed = this.ship.isOverheated();
         const shouldBlink = isJammed && Math.floor(this.heatBarBlinkTimer / BLINK_INTERVAL) % 2 === 0;
         
         // Draw background
@@ -618,36 +604,9 @@ export class PlayingState implements GameState {
 
             // Check if exploding asteroid should auto-explode
             if (a.shouldAutoExplode() && activeGame) {
-                const context: CollisionContext = {
-                    game: activeGame,
-                    particleManager: this.particleManager,
-                    onAsteroidDestroyed: (asteroid: import('../interfaces/Actor').Actor) => {
-                        const ast = asteroid as Asteroid;
-                        if (ast.asteroidSize === AsteroidSize.SMALL) {
-                            this.score += ASTEROID_SMALL_POINTS;
-                        }
-                        const index = this.asteroids.indexOf(ast);
-                        if (index !== -1) {
-                            this.asteroids.splice(index, 1);
-                        }
-                    },
-                    onAsteroidSplit: (parentAsteroid: import('../interfaces/Actor').Actor, newAsteroids: import('../interfaces/Actor').Actor[]) => {
-                        const parent = parentAsteroid as Asteroid;
-                        if (parent.asteroidSize === AsteroidSize.LARGE) {
-                            this.score += ASTEROID_LARGE_POINTS;
-                        } else if (parent.asteroidSize === AsteroidSize.MEDIUM) {
-                            this.score += ASTEROID_MEDIUM_POINTS;
-                        }
-                        const index = this.asteroids.indexOf(parent);
-                        if (index !== -1) {
-                            this.asteroids.splice(index, 1);
-                        }
-                        this.asteroids.push(...(newAsteroids as Asteroid[]));
-                    },
-                    onExplosion: (x: number, y: number, radius: number) => {
-                        this.handleExplosion(x, y, radius, activeGame);
-                    }
-                };
+                const context = this.createCollisionContext(activeGame, {
+                    onExplosion: (x, y, radius) => this.handleExplosion(x, y, radius, activeGame)
+                });
                 a.triggerExplosion(context);
             }
             

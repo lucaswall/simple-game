@@ -303,6 +303,61 @@ describe('Ship', () => {
         });
     });
 
+    describe('resetOverheat', () => {
+        it('should reset heat to 0', () => {
+            ship.heat = 5;
+            ship.resetOverheat();
+            expect(ship.heat).toBe(0);
+        });
+
+        it('should reset overheatTimer to -1', () => {
+            ship.heat = 10;
+            ship['overheatTimer'] = 2.5;
+            ship.resetOverheat();
+            expect(ship['overheatTimer']).toBe(-1);
+        });
+
+        it('should reset heatCooldownTimer to 0', () => {
+            ship['heatCooldownTimer'] = 0.4;
+            ship.resetOverheat();
+            expect(ship['heatCooldownTimer']).toBe(0);
+        });
+
+        it('should allow shooting immediately after reset', () => {
+            ship.heat = 10;
+            ship['overheatTimer'] = 2.5;
+            ship.resetOverheat();
+
+            const initialBulletCount = bullets.length;
+            vi.spyOn(globalThis.performance, 'now').mockReturnValue(1000);
+            input.pressKey('Space');
+            ship.update(0.001);
+
+            expect(bullets.length).toBe(initialBulletCount + 1);
+            vi.restoreAllMocks();
+        });
+    });
+
+    describe('isOverheated', () => {
+        it('should return true when heat >= 10 and overheatTimer > 0', () => {
+            ship.heat = 10;
+            ship['overheatTimer'] = 2.5;
+            expect(ship.isOverheated()).toBe(true);
+        });
+
+        it('should return false when heat < 10', () => {
+            ship.heat = 9;
+            ship['overheatTimer'] = 2.5;
+            expect(ship.isOverheated()).toBe(false);
+        });
+
+        it('should return false when overheatTimer <= 0', () => {
+            ship.heat = 10;
+            ship['overheatTimer'] = 0;
+            expect(ship.isOverheated()).toBe(false);
+        });
+    });
+
     describe('Propulsion Particles', () => {
         let ctx: CanvasRenderingContext2D;
 

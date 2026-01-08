@@ -1,6 +1,9 @@
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
+// Canvas sizing constants
+export const LINK_ROW_ALLOWANCE = 64; // Space reserved for repo link row at bottom of screen
+
 // Ship constants (visual/positioning, not gameplay)
 export const SHIP_SIZE = 30;
 export const SHIP_X_POSITION = 100; // Nose x position

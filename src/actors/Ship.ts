@@ -78,6 +78,22 @@ export class Ship implements Collidable {
         this.propulsionIntensity = Math.max(0.25, intensity);
     }
 
+    /**
+     * Reset all weapon heat state. Call this when respawning or entering gameplay.
+     */
+    resetOverheat(): void {
+        this.heat = 0;
+        this.overheatTimer = -1;
+        this.heatCooldownTimer = 0;
+    }
+
+    /**
+     * Check if the weapon is currently in the overheated state (jammed).
+     */
+    isOverheated(): boolean {
+        return this.heat >= 10 && this.overheatTimer > 0;
+    }
+
     private updateWeaponHeat(deltaTime: number): void {
         const HEAT_DECREASE_INTERVAL = (SHIP_FIRE_RATE_MS * 2) / 1000; // Convert to seconds
         const OVERHEAT_DURATION = (SHIP_FIRE_RATE_MS * 10) / 1000; // Convert to seconds (double cooldown time)

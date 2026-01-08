@@ -1,6 +1,6 @@
 
 import './style.css'
-import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE } from './core/Constants';
+import { GAME_WIDTH, GAME_HEIGHT, PAUSE_OVERLAY_ALPHA, PAUSE_FONT_SIZE, LINK_ROW_ALLOWANCE } from './core/Constants';
 import { Game } from './core/Game';
 import { MainMenuState } from './states/MainMenuState';
 import { Input } from './core/Input';
@@ -23,11 +23,22 @@ if ('orientation' in screen && 'lock' in screen.orientation) {
     orientationLockSupported = true;
 }
 
-// Fullscreen handling
+// Fullscreen handling - prefer feature detection over userAgent sniffing
 function isMobileDevice(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-           (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
-           ('ontouchstart' in window);
+    // Primary: Check for touch capability (most reliable)
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        return true;
+    }
+    // Secondary: Check for hover capability (no hover = likely mobile)
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) {
+        return true;
+    }
+    // Tertiary: Check viewport width
+    if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+        return true;
+    }
+    // Fallback: userAgent as last resort (least reliable)
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 function getFullscreenElement(): Element | null {
@@ -163,7 +174,7 @@ function resizeCanvas() {
     const containerHeight = window.innerHeight;
 
     // Leave room for the repo link row so it stays visible on all screens
-    const linkAllowance = 64;
+    const linkAllowance = LINK_ROW_ALLOWANCE;
     
     // Maintain aspect ratio
     const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
