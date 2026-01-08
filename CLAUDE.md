@@ -56,3 +56,37 @@ All implement `Actor` interface (`update(deltaTime)`, `draw(ctx)`):
 - Tests are colocated under `tests/` mirroring src structure
 - Test utilities in `tests/utils/` (MockCanvas, MockGame, MockInput, TestHelpers)
 - Run tests and build after changes to ensure everything passes
+
+## Development Approach: TDD
+
+This project follows Test-Driven Development (TDD) practices:
+
+1. **Write tests first** - Before implementing a new feature or fix, write failing tests that describe the expected behavior
+2. **Run tests to verify they fail** - Ensure tests fail for the right reason before implementing
+3. **Implement the minimal code** - Write just enough code to make the tests pass
+4. **Refactor** - Clean up the code while keeping tests green
+5. **Repeat** - Continue the cycle for each new feature or fix
+
+### TDD Workflow Example
+
+```bash
+# 1. Write test first in tests/unit/...
+# 2. Run tests to see them fail
+npm test
+
+# 3. Implement the feature/fix
+# 4. Run tests again to verify they pass
+npm test
+
+# 5. Run full build to ensure no regressions
+npm run build
+```
+
+### Best Practices
+
+- Use `describe` blocks to group related tests
+- Use `beforeEach` for common setup
+- Test edge cases (null, undefined, boundary values)
+- Use type guards (`instanceof`) instead of unsafe type casts
+- Validate inputs at system boundaries (e.g., deltaTime validation in Game.ts)
+- Prefer feature detection over userAgent sniffing for platform detection

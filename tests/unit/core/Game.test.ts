@@ -37,13 +37,13 @@ describe('Game', () => {
         const playingState = new PlayingState(input);
         game.changeState(playingState);
         playingState['gameTime'] = 0;
-        
-        // Update with time scale 0.5
+
+        // Update with time scale 0.5 (use small deltaTime to avoid capping)
         game.setTimeScale(0.5);
-        game.update(1.0);
-        
-        // Game time should only advance by 0.5 (half speed)
-        expect(playingState['gameTime']).toBeCloseTo(0.5, 2);
+        game.update(0.1);
+
+        // Game time should only advance by 0.05 (half of 0.1)
+        expect(playingState['gameTime']).toBeCloseTo(0.05, 2);
     });
 
     it('should freeze time when startFreeze is called', () => {
@@ -62,24 +62,27 @@ describe('Game', () => {
     it('should restore time scale after freeze duration', () => {
         const playingState = new PlayingState(input);
         game.changeState(playingState);
-        
-        game.startFreeze(0.5);
+
+        game.startFreeze(0.15);
         expect(game.timeScale).toBe(0);
-        
-        // Update past freeze duration
-        game.update(0.6);
-        
+
+        // Update past freeze duration (use multiple small updates due to deltaTime cap)
+        game.update(0.1);
+        game.update(0.1);
+
         expect(game.timeScale).toBe(1);
     });
 
     it('should call callback after freeze completes', () => {
         let callbackCalled = false;
-        game.startFreeze(0.5, () => {
+        game.startFreeze(0.15, () => {
             callbackCalled = true;
         });
-        
-        game.update(0.6);
-        
+
+        // Multiple updates to exceed freeze duration (due to deltaTime cap)
+        game.update(0.1);
+        game.update(0.1);
+
         expect(callbackCalled).toBe(true);
     });
 
@@ -117,19 +120,21 @@ describe('Game', () => {
     it('should handle multiple freeze calls correctly', () => {
         const playingState = new PlayingState(input);
         game.changeState(playingState);
-        
-        game.startFreeze(0.3);
+
+        game.startFreeze(0.15);
         expect(game.timeScale).toBe(0);
-        
+
         // Start another freeze before first completes
-        game.update(0.1);
-        game.startFreeze(0.5);
-        
+        game.update(0.05);
+        game.startFreeze(0.2);
+
         // Should still be frozen
         expect(game.timeScale).toBe(0);
-        
-        // Complete both freezes
-        game.update(0.6);
+
+        // Complete both freezes (multiple updates due to deltaTime cap)
+        game.update(0.1);
+        game.update(0.1);
+        game.update(0.1);
         expect(game.timeScale).toBe(1);
     });
 
@@ -137,18 +142,66 @@ describe('Game', () => {
         const playingState = new PlayingState(input);
         game.changeState(playingState);
         playingState['gameTime'] = 0;
-        
+
+        // Use small deltaTime to avoid capping
         game.setTimeScale(0.25);
-        game.update(1.0);
-        
-        // Game time should advance by 0.25 (quarter speed)
-        expect(playingState['gameTime']).toBeCloseTo(0.25, 2);
-        
+        game.update(0.1);
+
+        // Game time should advance by 0.025 (quarter of 0.1)
+        expect(playingState['gameTime']).toBeCloseTo(0.025, 3);
+
         game.setTimeScale(2.0);
-        game.update(1.0);
-        
-        // Game time should advance by 2.0 (double speed)
-        expect(playingState['gameTime']).toBeCloseTo(2.25, 2);
+        game.update(0.1);
+
+        // Game time should advance by 0.2 (double of 0.1), total 0.225
+        expect(playingState['gameTime']).toBeCloseTo(0.225, 3);
+    });
+
+    describe('deltaTime validation', () => {
+        it('should skip update when deltaTime is NaN', () => {
+            const playingState = new PlayingState(input);
+            game.changeState(playingState);
+            playingState['gameTime'] = 0;
+
+            game.update(NaN);
+
+            // Game time should not advance
+            expect(playingState['gameTime']).toBe(0);
+        });
+
+        it('should skip update when deltaTime is Infinity', () => {
+            const playingState = new PlayingState(input);
+            game.changeState(playingState);
+            playingState['gameTime'] = 0;
+
+            game.update(Infinity);
+
+            // Game time should not advance
+            expect(playingState['gameTime']).toBe(0);
+        });
+
+        it('should skip update when deltaTime is negative', () => {
+            const playingState = new PlayingState(input);
+            game.changeState(playingState);
+            playingState['gameTime'] = 0;
+
+            game.update(-0.1);
+
+            // Game time should not advance
+            expect(playingState['gameTime']).toBe(0);
+        });
+
+        it('should cap deltaTime at maximum value to prevent large jumps', () => {
+            const playingState = new PlayingState(input);
+            game.changeState(playingState);
+            playingState['gameTime'] = 0;
+
+            // Update with a very large deltaTime (e.g., after tab was inactive)
+            game.update(5.0);
+
+            // Game time should be capped at MAX_DELTA_TIME (0.1 seconds)
+            expect(playingState['gameTime']).toBeLessThanOrEqual(0.1);
+        });
     });
 });
 

@@ -1,6 +1,9 @@
 import { GameState } from '../interfaces/GameState';
 import { GAME_WIDTH, GAME_HEIGHT, SHAKE_DECAY } from './Constants';
 
+// Maximum deltaTime to prevent large jumps (e.g., after tab was inactive)
+const MAX_DELTA_TIME = 0.1; // 100ms
+
 export class Game {
     ctx: CanvasRenderingContext2D;
     currentState: GameState;
@@ -52,15 +55,23 @@ export class Game {
     }
 
     update(deltaTime: number) {
+        // Validate deltaTime to prevent undefined behavior
+        if (!Number.isFinite(deltaTime) || deltaTime < 0) {
+            return;
+        }
+
+        // Cap deltaTime to prevent large jumps (e.g., after tab was inactive)
+        const clampedDeltaTime = Math.min(deltaTime, MAX_DELTA_TIME);
+
         // Update Shake
         if (this.shakeIntensity > 0) {
-            this.shakeIntensity -= SHAKE_DECAY * deltaTime;
+            this.shakeIntensity -= SHAKE_DECAY * clampedDeltaTime;
             if (this.shakeIntensity < 0) this.shakeIntensity = 0;
         }
 
         // Handle any active timed time-scale effect (e.g., hit-stop).
         if (this.timeScaleTimer > 0) {
-            this.timeScaleTimer -= deltaTime;
+            this.timeScaleTimer -= clampedDeltaTime;
             if (this.timeScaleTimer <= 0) {
                 this.timeScaleTimer = 0;
 
@@ -75,7 +86,7 @@ export class Game {
             }
         }
 
-        const scaledDeltaTime = deltaTime * this.timeScale;
+        const scaledDeltaTime = clampedDeltaTime * this.timeScale;
         this.currentState.update(this, scaledDeltaTime);
     }
 
